@@ -6,12 +6,8 @@ import shutil
 import os
 from PIL import Image
 
-# --- PDF編集用ライブラリ ---
-from io import BytesIO
-from pypdf import PdfReader, PdfWriter
-from reportlab.pdfgen import canvas
-from reportlab.lib.utils import ImageReader
-from email.utils import parsedate_to_datetime # HTTPヘッダーの日付解析用
+# HTTPヘッダーの日付解析用
+from email.utils import parsedate_to_datetime 
 
 # -----------------------------------
 # 1. 保存先フォルダの定義
@@ -21,49 +17,6 @@ os.makedirs(dest_folder_path, exist_ok=True)
 print(f"Destination folder: {dest_folder_path}")
 
 layer_folder_path = "layer"
-
-# -----------------------------------
-# PDFにレイヤー画像を合成する関数
-# -----------------------------------
-def overlay_japan_map(pdf_path, overlay_image_name):
-    overlay_png_path = os.path.join(layer_folder_path, overlay_image_name)
-
-    if not os.path.exists(pdf_path):
-        return pdf_path
-    if not os.path.exists(overlay_png_path):
-        print(f"警告: レイヤー画像なし ({overlay_png_path}) -> 合成スキップ")
-        return pdf_path
-
-    print(f"カラー合成処理開始: {pdf_path} + {overlay_image_name}")
-
-    try:
-        reader = PdfReader(pdf_path)
-        writer = PdfWriter()
-
-        for page in reader.pages:
-            width = float(page.mediabox.width)
-            height = float(page.mediabox.height)
-
-            packet = BytesIO()
-            can = canvas.Canvas(packet, pagesize=(width, height))
-            can.drawImage(ImageReader(overlay_png_path), 0, 0, width=width, height=height, mask="auto")
-            can.save()
-            packet.seek(0)
-            
-            overlay_pdf = PdfReader(packet)
-            page.merge_page(overlay_pdf.pages[0])
-            writer.add_page(page)
-
-        output_file = pdf_path.replace(".pdf", "_COLOR.pdf")
-        with open(output_file, "wb") as f:
-            writer.write(f)
-        
-        print(f"レイヤー合成完了: {output_file}")
-        return output_file
-
-    except Exception as e:
-        print(f"合成エラー: {e} -> 元ファイルを使用します")
-        return pdf_path
 
 # -----------------------------------
 # 2. PDF/画像 ダウンロード関数群
@@ -217,24 +170,50 @@ def download_fxjp106_checked():
     return None
 
 # -----------------------------------
-# 4. 保存・アップロード用関数
+# 4. ★新設: 画像化＆合成＆保存関数
 # -----------------------------------
-def pdf_to_png_and_upload(pdf_file, final_drive_name):
-    if pdf_file and os.path.exists(pdf_file):
-        png_filename_local = pdf_file.replace(".pdf", ".png")
-        pages = convert_from_path(pdf_file, dpi=200)
-        pages[0].save(png_filename_local, "PNG")
+def pdf_to_png_and_upload(pdf_file, final_drive_name, overlay_image_name=None):
+    if not pdf_file or not os.path.exists(pdf_file):
+        return False
 
-        shutil.copy(png_filename_local, os.path.join(dest_folder_path, final_drive_name))
-        print(f"Copied {png_filename_local} to {os.path.join(dest_folder_path, final_drive_name)}")
-        os.remove(png_filename_local)
-        return True
-    return False
+    # 1. まずPDFを画像(PNG)に変換する (解像度を確保)
+    png_filename_local = pdf_file.replace(".pdf", ".png")
+    pages = convert_from_path(pdf_file, dpi=200)
+    
+    # アルファチャンネル(透明度)を持たせたRGBA形式でベース画像を用意
+    base_img = pages[0].convert("RGBA")
+
+    # 2. レイヤーの指定があれば合成処理を実行
+    if overlay_image_name:
+        overlay_png_path = os.path.join(layer_folder_path, overlay_image_name)
+        if os.path.exists(overlay_png_path):
+            print(f"PIL画像合成: {pdf_file} に {overlay_image_name} を重ねます")
+            try:
+                overlay_img = Image.open(overlay_png_path).convert("RGBA")
+                # 天気図の画像サイズに合わせてレイヤー画像をリサイズ（ズレ防止）
+                overlay_img = overlay_img.resize(base_img.size, Image.Resampling.LANCZOS)
+                # ベース画像の上に透過レイヤー画像を重ね合わせる
+                base_img = Image.alpha_composite(base_img, overlay_img)
+            except Exception as e:
+                print(f"合成エラー: {e}")
+        else:
+            print(f"警告: レイヤー画像が見つかりません -> {overlay_png_path}")
+
+    # 3. 最終画像をRGBに戻して保存
+    base_img.convert("RGB").save(png_filename_local, "PNG")
+
+    # 4. 所定のディレクトリに配置
+    dest_path = os.path.join(dest_folder_path, final_drive_name)
+    shutil.copy(png_filename_local, dest_path)
+    print(f"保存完了: {dest_path}")
+    
+    os.remove(png_filename_local)
+    return True
 
 def direct_png_upload(local_png_file, final_drive_name):
     if local_png_file and os.path.exists(local_png_file):
         shutil.copy(local_png_file, os.path.join(dest_folder_path, final_drive_name))
-        print(f"Copied {local_png_file} to {os.path.join(dest_folder_path, final_drive_name)}")
+        print(f"保存完了: {os.path.join(dest_folder_path, final_drive_name)}")
         os.remove(local_png_file)
         return True
     return False
@@ -255,7 +234,7 @@ if fsas_pdf_local:
     pdf_to_png_and_upload(fsas_pdf_local, "FSAS_Latest.png")
     if os.path.exists(fsas_pdf_local): os.remove(fsas_pdf_local)
 
-# --- AUPQ / FXFE / FXJP (合成対象) ---
+# --- AUPQ / FXFE / FXJP (★画像合成対象) ---
 charts_to_process = [
     ('aupq35', 'japan_overlay_aupq.png', 'AUPQ35_Latest.png'),
     ('aupq78', 'japan_overlay_aupq.png', 'AUPQ78_Latest.png'),
@@ -267,10 +246,9 @@ charts_to_process = [
 for code, overlay, out_name in charts_to_process:
     raw_pdf = get_latest_jma_nwpmap_pdf(code)
     if raw_pdf:
-        color_pdf = overlay_japan_map(raw_pdf, overlay)
-        pdf_to_png_and_upload(color_pdf, out_name)
+        # ダウンロードしたPDFとレイヤー名を渡し、関数内で一発合成する
+        pdf_to_png_and_upload(raw_pdf, out_name, overlay_image_name=overlay)
         if os.path.exists(raw_pdf): os.remove(raw_pdf)
-        if color_pdf != raw_pdf and os.path.exists(color_pdf): os.remove(color_pdf)
 
 # --- FXJP106 / FBJP ---
 fxjp106_png = download_fxjp106_checked()
@@ -279,29 +257,18 @@ if fxjp106_png: direct_png_upload(fxjp106_png, "FXJP106_Latest.png")
 fbjp_png = download_jma_png("https://www.data.jma.go.jp/airinfo/data/pict/fbjp/fbjp.png", "FBJP_Latest")
 if fbjp_png: direct_png_upload(fbjp_png, "FBJP_Latest.png")
 
-# ---------------------------------------------------------
-# 新機能: 全国分の FBOS (SIGWX) を網羅してダウンロード
-# ---------------------------------------------------------
+# --- FBOS (全国網羅) ---
 fbos_regions = {
-    "01": "Hokkaido",
-    "02": "Tohoku",
-    "03": "East",
-    "04": "West",
-    "05": "Okinawa",
-    "06": "Amami",
-    "39": "West_Kyushu"
+    "01": "Hokkaido", "02": "Tohoku", "03": "East",
+    "04": "West", "05": "Okinawa", "06": "Amami", "39": "West_Kyushu"
 }
 for code, name in fbos_regions.items():
     url = f"https://www.data.jma.go.jp/airinfo/data/pict/low-level_sigwx/fbos{code}.png"
     png = download_jma_png(url, f"temp_fbos_{code}")
-    if png:
-        direct_png_upload(png, f"FBOS_{name}_Latest.png")
+    if png: direct_png_upload(png, f"FBOS_{name}_Latest.png")
 
 # --- 降灰予報図 (合成不要) ---
-ash_volcanoes = [
-    ("Sakurajima", "JR506X"),
-    ("Kirishimayama", "JR551X")
-]
+ash_volcanoes = [("Sakurajima", "JR506X"), ("Kirishimayama", "JR551X")]
 for name, code in ash_volcanoes:
     pdf_file = get_latest_jma_ashfall_pdf_stable(name, code)
     if pdf_file:
@@ -309,11 +276,9 @@ for name, code in ash_volcanoes:
         os.remove(pdf_file)
 
 # -----------------------------------
-# 6. 【変更】共通画像のPDF化 (Common_Briefing.pdf)
-# 個別空港情報(QMC等)は含めず、全国共通の画像のみを結合
+# 6. 共通画像のPDF化 (Common_Briefing.pdf)
 # -----------------------------------
 def create_common_pdf(image_folder):
-    # 全国で共通して使用する画像リスト
     target_images = [
         "ASAS_Prior.png", "ASAS_Latest.png", "FSAS_Latest.png",
         "AUPQ35_Latest.png", "AUPQ78_Latest.png",
