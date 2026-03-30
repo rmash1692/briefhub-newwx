@@ -149,7 +149,7 @@
         const targetList = [
             ...commonCharts.map(c => ({ title: c.title, url: `images/${c.file}` })),
             ...config.fbos.map(f => ({ title: "下層悪天予想図", url: `images/${f}` })),
-            ...config.ash.map(a => ({ title: "Ashfall Forecast", url: `images/${a}` })),
+            ...config.ash.map(a => ({ title: "降灰予想図", url: `images/${a}` })),
             { title: "飛行場時系列予報 Part1", url: `${WORKER_URL}/?icao=${icao}&type=QMCD98` },
             { title: "飛行場時系列予報 Part2", url: `${WORKER_URL}/?icao=${icao}&type=QMCJ98` }
         ];
