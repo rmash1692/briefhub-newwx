@@ -2,55 +2,138 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>BriefHub WX - Dynamic PDF</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BriefHub WX - Flight Briefing</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <style>
-        body { font-family: sans-serif; max-width: 600px; margin: 50px auto; text-align: center; }
-        .box { border: 2px solid #0078D4; padding: 30px; border-radius: 10px; background: #f9f9f9; }
-        input { padding: 12px; width: 60%; font-size: 18px; border-radius: 5px; border: 1px solid #ccc; text-transform: uppercase; }
-        button { padding: 12px 24px; font-size: 18px; background: #0078D4; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; }
-        button:disabled { background: #ccc; }
-        #msg { margin-top: 20px; font-weight: bold; }
+        :root {
+            --primary-color: #0078D4;
+            --bg-color: #f3f2f1;
+            --header-bg: #ffffff;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        /* ヘッダーデザイン（METAR/TAFツールと統一） */
+        header {
+            background: var(--header-bg);
+            padding: 10px 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 10;
+        }
+        h1 { font-size: 18px; margin: 0; color: var(--primary-color); white-space: nowrap; }
+        .input-group { display: flex; gap: 5px; flex-grow: 1; max-width: 400px; }
+        input {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            width: 100px;
+            text-transform: uppercase;
+        }
+        button {
+            padding: 8px 16px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        button:disabled { background: #a1a1a1; cursor: not-allowed; }
+        
+        #status { font-size: 13px; color: #666; margin-left: 10px; }
+
+        /* メイン閲覧エリア */
+        main {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            overflow: hidden;
+        }
+        #pdf-viewer {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            display: none; /* 初期は非表示 */
+        }
+        .placeholder {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            color: #888;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
 
-<div class="box">
-    <h2>Flight Briefing Generator</h2>
-    <p>ICAOコードを入力してPDFを生成</p>
-    <input type="text" id="icao" placeholder="e.g. RJFK" maxlength="4">
-    <br>
-    <button id="btn" onclick="build()">Generate PDF</button>
-    <div id="msg"></div>
-</div>
+<header>
+    <h1>BriefHub WX</h1>
+    <div class="input-group">
+        <input type="text" id="icao" placeholder="RJXX" maxlength="4">
+        <button id="btn" onclick="generateBriefing()">Generate & View</button>
+        <button id="dl-btn" style="background:#555; display:none;" onclick="downloadPDF()">Download PDF</button>
+    </div>
+    <div id="status">Enter ICAO code to start.</div>
+</header>
+
+<main>
+    <div id="placeholder" class="placeholder">
+        ICAOコードを入力して「Generate & View」を押してください。
+    </div>
+    <iframe id="pdf-viewer"></iframe>
+</main>
 
 <script>
     const WORKER_URL = "https://taf-proxy.bbfn2187.workers.dev";
+    let currentPdfBlobUrl = null;
+    let currentIcao = "";
 
-    // 空港ごとの画像割り当て表
     const airportConfig = {
-        "RJFK": { fbos: ["FBOS_West.png"], ash: ["Ashfall_Sakurajima.png"] },
-        "RJCC": { fbos: ["FBOS_Hokkaido.png"], ash: [] },
-        "RJTT": { fbos: ["FBOS_East.png"], ash: [] }
+        "RJFK": { fbos: ["FBOS_West_Latest.png"], ash: ["Ashfall_Sakurajima_Latest.png"] },
+        "RJCC": { fbos: ["FBOS_Hokkaido_Latest.png"], ash: [] },
+        "RJTT": { fbos: ["FBOS_East_Latest.png"], ash: [] }
+        // 必要に応じて追加
     };
 
-    async function build() {
+    async function generateBriefing() {
         const icao = document.getElementById('icao').value.toUpperCase();
-        const msg = document.getElementById('msg');
+        const status = document.getElementById('status');
         const btn = document.getElementById('btn');
+        const dlBtn = document.getElementById('dl-btn');
+        const viewer = document.getElementById('pdf-viewer');
+        const placeholder = document.getElementById('placeholder');
+
         if (icao.length < 4) return alert("ICAOを入力してください");
 
+        currentIcao = icao;
         btn.disabled = true;
-        msg.innerText = "共通PDFを取得中...";
+        status.innerText = "Processing...";
 
         try {
             const { PDFDocument } = PDFLib;
             
-            // 1. 共通PDFの読み込み
+            // 1. 共通PDFの取得
+            status.innerText = "Fetching Common Briefing...";
             const commonBytes = await fetch(`images/Common_Briefing.pdf?t=${Date.now()}`).then(res => res.arrayBuffer());
             const pdfDoc = await PDFDocument.load(commonBytes);
 
-            // 2. 追加する画像の決定
+            // 2. 空港別コンテンツの決定
             const config = airportConfig[icao] || { fbos: [], ash: [] };
             const imagePaths = [
                 ...config.fbos.map(f => `images/${f}`),
@@ -59,16 +142,15 @@
                 `${WORKER_URL}/?icao=${icao}&type=QMCJ98`
             ];
 
-            // 3. 画像を1枚ずつページとして結合
+            // 3. 画像ページを追加
             for (const path of imagePaths) {
-                msg.innerText = `画像を追加中: ${path.split('/').pop()}`;
                 try {
                     const imgRes = await fetch(path);
                     if (!imgRes.ok) continue;
                     const imgBytes = await imgRes.arrayBuffer();
                     
                     const img = await pdfDoc.embedPng(imgBytes);
-                    const page = pdfDoc.addPage([842, 595]); // A4横
+                    const page = pdfDoc.addPage([842, 595]); // A4横サイズ
                     const { width, height } = img.scale(1);
                     const ratio = Math.min(802 / width, 555 / height);
                     
@@ -78,25 +160,39 @@
                         width: width * ratio,
                         height: height * ratio
                     });
-                } catch (e) { console.error(e); }
+                } catch (e) { console.warn("Skip image:", path); }
             }
 
-            // 4. ダウンロード
+            // 4. PDF生成と表示
             const finalBytes = await pdfDoc.save();
             const blob = new Blob([finalBytes], { type: 'application/pdf' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Briefing_${icao}.pdf`;
-            a.click();
             
-            msg.innerText = "完了しました！";
+            // 古いURLを解放してメモリリーク防止
+            if (currentPdfBlobUrl) URL.revokeObjectURL(currentPdfBlobUrl);
+            
+            currentPdfBlobUrl = URL.createObjectURL(blob);
+            
+            // ブラウザのビューアにセット
+            viewer.src = currentPdfBlobUrl + "#toolbar=1"; // ツールバー表示
+            viewer.style.display = "block";
+            placeholder.style.display = "none";
+            dlBtn.style.display = "inline-block";
+            
+            status.innerText = "Completed.";
         } catch (err) {
-            msg.innerText = "エラーが発生しました。";
+            status.innerText = "Error occurred.";
             console.error(err);
         } finally {
             btn.disabled = false;
         }
+    }
+
+    function downloadPDF() {
+        if (!currentPdfBlobUrl) return;
+        const a = document.createElement('a');
+        a.href = currentPdfBlobUrl;
+        a.download = `Briefing_${currentIcao}.pdf`;
+        a.click();
     }
 </script>
 
