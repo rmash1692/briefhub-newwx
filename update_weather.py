@@ -257,16 +257,25 @@ if fxjp106_png: direct_png_upload(fxjp106_png, "FXJP106_Latest.png")
 fbjp_png = download_jma_png("https://www.data.jma.go.jp/airinfo/data/pict/fbjp/fbjp.png", "FBJP_Latest")
 if fbjp_png: direct_png_upload(fbjp_png, "FBJP_Latest.png")
 
-# --- FBOS (全国網羅) ---
-fbos_regions = {
-    "01": "Hokkaido", "02": "Tohoku", "03": "East",
-    "04": "West", "05": "Okinawa", "06": "Amami", "39": "West_Kyushu"
+# --- 下層悪天予想図 (全国網羅) ---
+# 各地域の正しいファイル名コード(小文字)を定義
+sigwx_regions = {
+    "fbsp": "Hokkaido",  # 北海道
+    "fbsn": "Tohoku",    # 東北
+    "fbtk": "East",      # 東日本
+    "fbos": "West",      # 西日本
+    "fbkg": "Amami",     # 奄美
+    "fbok": "Okinawa"    # 沖縄
 }
-for code, name in fbos_regions.items():
-    url = f"https://www.data.jma.go.jp/airinfo/data/pict/low-level_sigwx/fbos{code}.png"
-    png = download_jma_png(url, f"temp_fbos_{code}")
-    if png: direct_png_upload(png, f"FBOS_{name}_Latest.png")
 
+for code, name in sigwx_regions.items():
+    # URLの末尾を各地域コード(.png)に変更
+    url = f"https://www.data.jma.go.jp/airinfo/data/pict/low-level_sigwx/{code}.png"
+    png = download_jma_png(url, f"temp_{code}")
+    
+    # HTML側(JS)の airportConfig の読み込み設定を壊さないよう、
+    # 保存ファイル名は従来通り "FBOS_地域名_Latest.png" の形式で統一して出力します
+    if png: direct_png_upload(png, f"FBOS_{name}_Latest.png")
 # --- 降灰予報図 (合成不要) ---
 ash_volcanoes = [("Sakurajima", "JR506X"), ("Kirishimayama", "JR551X")]
 for name, code in ash_volcanoes:
