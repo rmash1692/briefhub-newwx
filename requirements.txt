@@ -1,5 +1,3 @@
 requests
 pdf2image
-pypdf
-reportlab
 Pillow
