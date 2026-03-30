@@ -281,7 +281,8 @@ for name, code in ash_volcanoes:
 def create_common_pdf(image_folder):
     target_images = [
         "ASAS_Prior.png", "ASAS_Latest.png", "FSAS_Latest.png",
-        "AUPQ35_Latest.png", "AUPQ78_Latest.png",
+        "ASAS_Prior.png", "AUPQ35_Latest.png", "AUPQ78_Latest.png",
+        "ASAS_Latest.png", "FSAS_Latest.png",
         "FXFE502_Latest.png", "FXFE5782_Latest.png",
         "FXJP854_Latest.png", "FXJP106_Latest.png",
         "FBJP_Latest.png"
