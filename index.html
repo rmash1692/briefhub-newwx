@@ -8,18 +8,18 @@
     <style>
         body { font-family: Arial, sans-serif; color: #333; max-width: 950px; margin: 0 auto; padding: 20px; background-color: #fff; }
         h2 { text-align: center; font-weight: normal; border-bottom: 2px solid #0078D4; padding-bottom: 15px; margin-bottom: 20px; letter-spacing: 1px; color: #0078D4; }
-        
+
         .search-container { 
             display: flex; gap: 15px; justify-content: center; align-items: center; 
             margin-bottom: 30px; flex-wrap: wrap; background: #f8f9fa; padding: 15px; border-radius: 8px; 
         }
         input[type="text"] { padding: 10px; font-size: 16px; border: 1px solid #ccc; width: 250px; text-transform: uppercase; outline: none; }
         input[type="text"]:focus { border-color: #0078D4; }
-        
+
         button { padding: 10px 20px; font-size: 16px; background-color: #0078D4; color: white; border: none; cursor: pointer; border-radius: 4px; }
         button:hover { background-color: #005a9e; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
-        
+
         .btn-pdf { background-color: #28a745; }
         .btn-pdf:hover { background-color: #218838; }
 
@@ -54,7 +54,7 @@
 
 <script>
     const WORKER_URL = "https://taf-proxy.bbfn2187.workers.dev";
-    
+
     // ページ読み込み時に保存されたICAOコードを復元
     window.onload = () => {
         const savedIcao = localStorage.getItem('briefing_icao');
@@ -93,139 +93,106 @@
     let currentImages = [];
 
     async function generateView() {
-        const icao = document.getElementById('icao').value.toUpperCase();
-        const resultDiv = document.getElementById('result');
-        const genBtn = document.getElementById('gen-btn');
+        const icao = document.getElementById('icao').value.toUpperCase();
+        const resultDiv = document.getElementById('result');
+        const genBtn = document.getElementById('gen-btn');
 
-        if (icao.length < 4) return alert("ICAOコードを入力してください。");
+        if (icao.length < 4) return alert("ICAOコードを入力してください。");
 
-        // ローディング表示を開始
-        resultDiv.innerHTML = '<div class="loading">Generating Briefing Charts... Please wait.</div>';
-        genBtn.disabled = true;
-        currentImages = [];
+        resultDiv.innerHTML = '<div class="loading">Generating Briefing Charts...</div>';
+        genBtn.disabled = true;
+        currentImages = [];
 
-        const config = airportConfig[icao] || { fbos: [], ash: [] };
-        const targetList = [
-            ...commonCharts.map(c => ({ title: c.title, url: `images/${c.file}` })),
-            ...config.fbos.map(f => ({ title: "FBOS", url: `images/${f}` })),
-            ...config.ash.map(a => ({ title: "Ashfall Forecast", url: `images/${a}` })),
-            { title: "METAR (QMC)", url: `${WORKER_URL}/?icao=${icao}&type=QMCD98` },
-            { title: "TAF (QMC)", url: `${WORKER_URL}/?icao=${icao}&type=QMCJ98` }
-        ];
+        const config = airportConfig[icao] || { fbos: [], ash: [] };
+        const targetList = [
+            ...commonCharts.map(c => ({ title: c.title, url: `images/${c.file}` })),
+            ...config.fbos.map(f => ({ title: "FBOS", url: `images/${f}` })),
+            ...config.ash.map(a => ({ title: "Ashfall Forecast", url: `images/${a}` })),
+            { title: "METAR (QMC)", url: `${WORKER_URL}/?icao=${icao}&type=QMCD98` },
+            { title: "TAF (QMC)", url: `${WORKER_URL}/?icao=${icao}&type=QMCJ98` }
+        ];
 
-        // 取得した画像カードを一時的に貯めておくためのフラグメント
-        const fragment = document.createDocumentFragment();
+        resultDiv.innerHTML = "";
 
-        for (const item of targetList) {
-            try {
-                const res = await fetch(item.url);
-                if (!res.ok) {
-                    console.warn("Not found / Error:", item.url);
-                    continue;
-                }
+        for (const item of targetList) {
+            try {
+                const res = await fetch(item.url);
+                if (!res.ok) continue;
 
-                const blob = await res.blob();
-                const objUrl = URL.createObjectURL(blob);
-                currentImages.push({ title: item.title, blob: blob });
+                const blob = await res.blob();
+                const objUrl = URL.createObjectURL(blob);
+                currentImages.push({ title: item.title, blob: blob });
 
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <h3>${item.title} <span style="font-size:12px; color:#999;">${icao}</span></h3>
-                    <img src="${objUrl}" class="chart-img" alt="${item.title}">
-                `;
-                fragment.appendChild(card);
-            } catch (e) {
-                console.error("Fetch failed (Local CORS or Network error):", item.url, e);
-            }
-        }
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <h3>${item.title} <span style="font-size:12px; color:#999;">${icao}</span></h3>
+                    <img src="${objUrl}" class="chart-img" alt="${item.title}">
+                `;
+                resultDiv.appendChild(card);
+            } catch (e) {
+                console.error("Load failed:", item.url);
+            }
+        }
 
-        // 画像の取得処理がすべて終わった段階でローディングを消し、結果を表示
-        resultDiv.innerHTML = ""; 
-
-        if (currentImages.length === 0) {
-            resultDiv.innerHTML = '<div class="error-msg">有効な画像が見つかりませんでした。<br><span style="font-size:13px;">※ローカル（ダブルクリック）で開いている場合、セキュリティ制限で取得できません。GitHub等に上げるか、ローカルサーバーをご利用ください。</span></div>';
-        } else {
-            resultDiv.appendChild(fragment);
-        }
-
-        genBtn.disabled = false;
-    }
-
-async function downloadAllAsPDF() {
-    if (currentImages.length === 0) {
-        return alert("先に「Generate View」を実行して画像を取得してください。");
+        if (currentImages.length === 0) {
+            resultDiv.innerHTML = '<div class="error-msg">有効な画像が見つかりませんでした。</div>';
+        }
+        genBtn.disabled = false;
     }
-    
-    const icao = document.getElementById('icao').value.toUpperCase();
-    const pdfBtn = document.getElementById('pdf-btn');
-    const originalText = pdfBtn.innerText; // "Download PDF" を保持
 
-    // ボタンの状態を「準備中」に変更
-    pdfBtn.disabled = true;
-    pdfBtn.innerText = "Preparing...";
+    async function downloadAllAsPDF() {
+        if (currentImages.length === 0) {
+            return alert("先に「Generate View」を実行して画像を取得してください。");
+        }
+        const icao = document.getElementById('icao').value.toUpperCase();
 
-    try {
         const { PDFDocument } = PDFLib;
+        // 共通PDFは使わず、画面にある画像をベースに完全新規でPDFを作成
         const pdfDoc = await PDFDocument.create();
-        const total = currentImages.length;
 
-        for (let i = 0; i < total; i++) {
-            const item = currentImages[i];
-            
-            // 進捗状況を表示 (例: Generating... 25%)
-            const percent = Math.round((i / total) * 100);
-            pdfBtn.innerText = `Generating... ${percent}%`;
-            
-            // ブラウザの描画を更新させるための短い待機
-            await new Promise(r => setTimeout(r, 1));
-
+        for (const item of currentImages) {
             try {
                 const imgBytes = await item.blob.arrayBuffer();
                 const img = await pdfDoc.embedPng(imgBytes);
-                
+
                 const { width, height } = img.scale(1);
+
+                // 画像の縦横比からページの向きを決定 (A4サイズ)
                 const isLandscape = width > height;
                 const pageWidth = isLandscape ? 842 : 595;
                 const pageHeight = isLandscape ? 595 : 842;
-                
+
                 const page = pdfDoc.addPage([pageWidth, pageHeight]);
-                
+
+                // 余白を最小限に設定 (例: 15pt) して画像を最大化
                 const margin = 10;
                 const maxW = pageWidth - margin * 2;
                 const maxH = pageHeight - margin * 2;
-                
+
+                // ページに収まる最大の縮小率を計算
                 const ratio = Math.min(maxW / width, maxH / height);
                 const drawW = width * ratio;
                 const drawH = height * ratio;
-                
+
+                // 中央に配置して描画
                 page.drawImage(img, {
                     x: (pageWidth - drawW) / 2,
                     y: (pageHeight - drawH) / 2,
                     width: drawW,
                     height: drawH
                 });
-            } catch (e) { 
-                console.warn("PDF Embed Error", e); 
-            }
+            } catch (e) { console.warn("PDF Embed Error", e); }
         }
 
-        // 保存直前
-        pdfBtn.innerText = "Saving PDF...";
         const pdfBytes = await pdfDoc.save();
-        
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = `Briefing_${icao}_${new Date().getTime()}.pdf`;
         link.click();
-
-    } catch (err) {
-        console.error(err);
-        alert("PDF生成中にエラーが発生しました。");
-    } finally {
-        // ボタンを元の状態に戻す
-        pdfBtn.disabled = false;
-        pdfBtn.innerText = originalText;
     }
-}
+</script>
+
+</body>
+</html>
