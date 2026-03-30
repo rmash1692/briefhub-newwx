@@ -6,193 +6,173 @@
     <title>BriefHub WX - Flight Briefing</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <style>
-        :root {
-            --primary-color: #0078D4;
-            --bg-color: #f3f2f1;
-            --header-bg: #ffffff;
-        }
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            margin: 0;
-            background-color: var(--bg-color);
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-        /* ヘッダーデザイン（METAR/TAFツールと統一） */
-        header {
-            background: var(--header-bg);
-            padding: 10px 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            z-index: 10;
-        }
-        h1 { font-size: 18px; margin: 0; color: var(--primary-color); white-space: nowrap; }
-        .input-group { display: flex; gap: 5px; flex-grow: 1; max-width: 400px; }
-        input {
-            padding: 8px 12px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 16px;
-            width: 100px;
-            text-transform: uppercase;
-        }
-        button {
-            padding: 8px 16px;
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            white-space: nowrap;
-        }
-        button:disabled { background: #a1a1a1; cursor: not-allowed; }
+        /* 提供いただいたMETAR/TAFのデザインを継承 */
+        body { font-family: Arial, sans-serif; color: #333; max-width: 950px; margin: 0 auto; padding: 20px; background-color: #fff; }
+        h2 { text-align: center; font-weight: normal; border-bottom: 2px solid #0078D4; padding-bottom: 15px; margin-bottom: 20px; letter-spacing: 1px; color: #0078D4; }
         
-        #status { font-size: 13px; color: #666; margin-left: 10px; }
+        .search-container { 
+            display: flex; gap: 15px; justify-content: center; align-items: center; 
+            margin-bottom: 30px; flex-wrap: wrap; background: #f8f9fa; padding: 15px; border-radius: 8px; 
+        }
+        input[type="text"] { padding: 10px; font-size: 16px; border: 1px solid #ccc; width: 250px; text-transform: uppercase; outline: none; }
+        input[type="text"]:focus { border-color: #0078D4; }
+        
+        button { padding: 10px 20px; font-size: 16px; background-color: #0078D4; color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; }
+        button:hover { background-color: #005a9e; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        
+        .btn-pdf { background-color: #28a745; }
+        .btn-pdf:hover { background-color: #218838; }
 
-        /* メイン閲覧エリア */
-        main {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            padding: 10px;
-            overflow: hidden;
+        /* 天気図表示用カードスタイル */
+        .card { 
+            border-left: 4px solid #0078D4; border-top: 1px solid #eee; border-right: 1px solid #eee; 
+            border-bottom: 1px solid #eee; padding: 15px; margin-bottom: 25px; border-radius: 0 4px 4px 0; 
+            background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-        #pdf-viewer {
-            width: 100%;
-            height: 100%;
-            border: none;
-            background: #fff;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            display: none; /* 初期は非表示 */
+        .card h3 { 
+            margin: 0 0 15px 0; font-size: 18px; color: #0078D4; border-bottom: 1px dashed #eee; 
+            padding-bottom: 10px; display: flex; justify-content: space-between;
         }
-        .placeholder {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-            color: #888;
-            border: 2px dashed #ccc;
-            border-radius: 8px;
-        }
+        .chart-img { width: 100%; height: auto; display: block; border-radius: 2px; }
+
+        .loading { text-align: center; color: #0078D4; font-weight: bold; padding: 20px; }
+        .error-msg { color: #d9534f; background: #fdf7f7; padding: 10px; border-radius: 4px; margin-bottom: 10px; text-align: center; }
     </style>
 </head>
 <body>
 
-<header>
-    <h1>BriefHub WX</h1>
-    <div class="input-group">
-        <input type="text" id="icao" placeholder="RJXX" maxlength="4">
-        <button id="btn" onclick="generateBriefing()">Generate & View</button>
-        <button id="dl-btn" style="background:#555; display:none;" onclick="downloadPDF()">Download PDF</button>
-    </div>
-    <div id="status">Enter ICAO code to start.</div>
-</header>
+    <h2>Flight Briefing</h2>
 
-<main>
-    <div id="placeholder" class="placeholder">
-        ICAOコードを入力して「Generate & View」を押してください。
+    <div class="search-container">
+        <input type="text" id="icao" placeholder="ICAO (e.g. RJFK)" maxlength="4">
+        <button id="gen-btn" onclick="generateView()">Generate View</button>
+        <button id="pdf-btn" onclick="downloadAllAsPDF()" class="btn-pdf" style="display:none;">Download PDF</button>
     </div>
-    <iframe id="pdf-viewer"></iframe>
-</main>
+
+    <div id="result">
+        </div>
 
 <script>
     const WORKER_URL = "https://taf-proxy.bbfn2187.workers.dev";
-    let currentPdfBlobUrl = null;
-    let currentIcao = "";
+    
+    // 共通で表示する画像リスト
+    const commonCharts = [
+        { title: "ASAS Prior", file: "ASAS_Prior.png" },
+        { title: "ASAS Latest", file: "ASAS_Latest.png" },
+        { title: "FSAS Latest", file: "FSAS_Latest.png" },
+        { title: "AUPQ35 (850hPa)", file: "AUPQ35_Latest.png" },
+        { title: "AUPQ78 (500/300hPa)", file: "AUPQ78_Latest.png" },
+        { title: "FXFE502", file: "FXFE502_Latest.png" },
+        { title: "FXFE5782", file: "FXFE5782_Latest.png" },
+        { title: "FXJP854", file: "FXJP854_Latest.png" },
+        { title: "FXJP106", file: "FXJP106_Latest.png" },
+        { title: "FBJP (Wind/Temp)", file: "FBJP_Latest.png" }
+    ];
 
+    // 空港別の個別設定
     const airportConfig = {
         "RJFK": { fbos: ["FBOS_West_Latest.png"], ash: ["Ashfall_Sakurajima_Latest.png"] },
         "RJCC": { fbos: ["FBOS_Hokkaido_Latest.png"], ash: [] },
-        "RJTT": { fbos: ["FBOS_East_Latest.png"], ash: [] }
-        // 必要に応じて追加
+        "RJTT": { fbos: ["FBOS_East_Latest.png"], ash: [] },
+        "RJFF": { fbos: ["FBOS_West_Latest.png"], ash: [] },
+        "RJOK": { fbos: ["FBOS_West_Latest.png"], ash: [] }
     };
 
-    async function generateBriefing() {
+    let currentImages = []; // PDF生成用に取得済み画像を保持
+
+    async function generateView() {
         const icao = document.getElementById('icao').value.toUpperCase();
-        const status = document.getElementById('status');
-        const btn = document.getElementById('btn');
-        const dlBtn = document.getElementById('dl-btn');
-        const viewer = document.getElementById('pdf-viewer');
-        const placeholder = document.getElementById('placeholder');
+        const resultDiv = document.getElementById('result');
+        const genBtn = document.getElementById('gen-btn');
+        const pdfBtn = document.getElementById('pdf-btn');
 
-        if (icao.length < 4) return alert("ICAOを入力してください");
+        if (icao.length < 4) return alert("ICAOコードを入力してください。");
 
-        currentIcao = icao;
-        btn.disabled = true;
-        status.innerText = "Processing...";
+        // 初期化
+        resultDiv.innerHTML = '<div class="loading">Generating Briefing Charts...</div>';
+        genBtn.disabled = true;
+        pdfBtn.style.display = "none";
+        currentImages = [];
 
-        try {
-            const { PDFDocument } = PDFLib;
-            
-            // 1. 共通PDFの取得
-            status.innerText = "Fetching Common Briefing...";
-            const commonBytes = await fetch(`images/Common_Briefing.pdf?t=${Date.now()}`).then(res => res.arrayBuffer());
-            const pdfDoc = await PDFDocument.load(commonBytes);
+        // 表示する全画像のパスを決定
+        const config = airportConfig[icao] || { fbos: [], ash: [] };
+        const targetList = [
+            ...commonCharts.map(c => ({ title: c.title, url: `images/${c.file}` })),
+            ...config.fbos.map(f => ({ title: "FBOS", url: `images/${f}` })),
+            ...config.ash.map(a => ({ title: "Ashfall Forecast", url: `images/${a}` })),
+            { title: "METAR (QMC)", url: `${WORKER_URL}/?icao=${icao}&type=QMCD98` },
+            { title: "TAF (QMC)", url: `${WORKER_URL}/?icao=${icao}&type=QMCJ98` }
+        ];
 
-            // 2. 空港別コンテンツの決定
-            const config = airportConfig[icao] || { fbos: [], ash: [] };
-            const imagePaths = [
-                ...config.fbos.map(f => `images/${f}`),
-                ...config.ash.map(a => `images/${a}`),
-                `${WORKER_URL}/?icao=${icao}&type=QMCD98`,
-                `${WORKER_URL}/?icao=${icao}&type=QMCJ98`
-            ];
+        resultDiv.innerHTML = ""; // ローディング消去
 
-            // 3. 画像ページを追加
-            for (const path of imagePaths) {
-                try {
-                    const imgRes = await fetch(path);
-                    if (!imgRes.ok) continue;
-                    const imgBytes = await imgRes.arrayBuffer();
-                    
-                    const img = await pdfDoc.embedPng(imgBytes);
-                    const page = pdfDoc.addPage([842, 595]); // A4横サイズ
-                    const { width, height } = img.scale(1);
-                    const ratio = Math.min(802 / width, 555 / height);
-                    
-                    page.drawImage(img, {
-                        x: (842 - width * ratio) / 2,
-                        y: (595 - height * ratio) / 2,
-                        width: width * ratio,
-                        height: height * ratio
-                    });
-                } catch (e) { console.warn("Skip image:", path); }
+        for (const item of targetList) {
+            try {
+                // 画像の存在確認を兼ねてフェッチ
+                const res = await fetch(item.url);
+                if (!res.ok) continue;
+
+                const blob = await res.blob();
+                const objUrl = URL.createObjectURL(blob);
+                currentImages.push({ title: item.title, blob: blob });
+
+                // カード要素を作成して追加
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <h3>${item.title} <span style="font-size:12px; color:#999;">${icao}</span></h3>
+                    <img src="${objUrl}" class="chart-img" alt="${item.title}">
+                `;
+                resultDiv.appendChild(card);
+            } catch (e) {
+                console.error("Load failed:", item.url);
             }
-
-            // 4. PDF生成と表示
-            const finalBytes = await pdfDoc.save();
-            const blob = new Blob([finalBytes], { type: 'application/pdf' });
-            
-            // 古いURLを解放してメモリリーク防止
-            if (currentPdfBlobUrl) URL.revokeObjectURL(currentPdfBlobUrl);
-            
-            currentPdfBlobUrl = URL.createObjectURL(blob);
-            
-            // ブラウザのビューアにセット
-            viewer.src = currentPdfBlobUrl + "#toolbar=1"; // ツールバー表示
-            viewer.style.display = "block";
-            placeholder.style.display = "none";
-            dlBtn.style.display = "inline-block";
-            
-            status.innerText = "Completed.";
-        } catch (err) {
-            status.innerText = "Error occurred.";
-            console.error(err);
-        } finally {
-            btn.disabled = false;
         }
+
+        if (currentImages.length > 0) {
+            pdfBtn.style.display = "inline-block";
+        } else {
+            resultDiv.innerHTML = '<div class="error-msg">有効な画像が見つかりませんでした。</div>';
+        }
+        genBtn.disabled = false;
     }
 
-    function downloadPDF() {
-        if (!currentPdfBlobUrl) return;
-        const a = document.createElement('a');
-        a.href = currentPdfBlobUrl;
-        a.download = `Briefing_${currentIcao}.pdf`;
-        a.click();
+    async function downloadAllAsPDF() {
+        const icao = document.getElementById('icao').value.toUpperCase();
+        if (currentImages.length === 0) return;
+
+        const { PDFDocument } = PDFLib;
+        const pdfDoc = await PDFDocument.load(await fetch(`images/Common_Briefing.pdf?t=${Date.now()}`).then(r => r.arrayBuffer()).catch(() => null)) 
+                       || await PDFDocument.create();
+
+        for (const item of currentImages) {
+            // すでにPDF内に含まれている可能性のある共通画像は除外して追加、
+            // もしくは完全に新規で作成する場合はここですべてembedする
+            // 今回は「画面に映っているものをそのまま束ねる」ロジックにします
+            try {
+                const imgBytes = await item.blob.arrayBuffer();
+                const img = await pdfDoc.embedPng(imgBytes);
+                
+                const page = pdfDoc.addPage([842, 595]); // A4 Landscape
+                const { width, height } = img.scale(1);
+                const ratio = Math.min(802 / width, 555 / height);
+                
+                page.drawImage(img, {
+                    x: (842 - width * ratio) / 2,
+                    y: (595 - height * ratio) / 2,
+                    width: width * ratio,
+                    height: height * ratio
+                });
+            } catch (e) { console.warn("PDF Embed Error", e); }
+        }
+
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Briefing_${icao}_${new Date().getTime()}.pdf`;
+        link.click();
     }
 </script>
 
