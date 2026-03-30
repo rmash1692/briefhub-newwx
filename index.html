@@ -83,7 +83,7 @@
         </div>
     </div>
 
-    <h2>Flight Briefing</h2>
+    <h2>WX Briefing</h2>
 
     <div class="search-container">
         <input type="text" id="icao" placeholder="ICAO (RJTT RJAA...)" maxlength="4" oninput="saveToLocal()">
@@ -194,7 +194,6 @@
         overlay.style.display = 'flex';
 
         // 2. 画面にポップアップが描画される時間を確保するため、少しだけ待機
-        // ※JavaScriptの仕様上、この待機がないとPDF処理に全力が注がれ、ポップアップが表示されません
         await new Promise(resolve => setTimeout(resolve, 50));
 
         try {
@@ -214,7 +213,7 @@
 
                     const page = pdfDoc.addPage([pageWidth, pageHeight]);
 
-                    const margin = 10; // 重複していた変数を修正
+                    const margin = 5; 
                     const maxW = pageWidth - margin * 2;
                     const maxH = pageHeight - margin * 2;
 
