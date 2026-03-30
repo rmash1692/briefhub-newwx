@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>BriefHub WX - Dynamic PDF</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 50px auto; text-align: center; }
+        .box { border: 2px solid #0078D4; padding: 30px; border-radius: 10px; background: #f9f9f9; }
+        input { padding: 12px; width: 60%; font-size: 18px; border-radius: 5px; border: 1px solid #ccc; text-transform: uppercase; }
+        button { padding: 12px 24px; font-size: 18px; background: #0078D4; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+        button:disabled { background: #ccc; }
+        #msg { margin-top: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h2>Flight Briefing Generator</h2>
+    <p>ICAOコードを入力してPDFを生成</p>
+    <input type="text" id="icao" placeholder="e.g. RJFK" maxlength="4">
+    <br>
+    <button id="btn" onclick="build()">Generate PDF</button>
+    <div id="msg"></div>
+</div>
+
+<script>
+    const WORKER_URL = "https://taf-proxy.bbfn2187.workers.dev";
+
+    // 空港ごとの画像割り当て表
+    const airportConfig = {
+        "RJFK": { fbos: ["FBOS_West.png"], ash: ["Ashfall_Sakurajima.png"] },
+        "RJCC": { fbos: ["FBOS_Hokkaido.png"], ash: [] },
+        "RJTT": { fbos: ["FBOS_East.png"], ash: [] }
+    };
+
+    async function build() {
+        const icao = document.getElementById('icao').value.toUpperCase();
+        const msg = document.getElementById('msg');
+        const btn = document.getElementById('btn');
+        if (icao.length < 4) return alert("ICAOを入力してください");
+
+        btn.disabled = true;
+        msg.innerText = "共通PDFを取得中...";
+
+        try {
+            const { PDFDocument } = PDFLib;
+            
+            // 1. 共通PDFの読み込み
+            const commonBytes = await fetch(`images/Common_Briefing.pdf?t=${Date.now()}`).then(res => res.arrayBuffer());
+            const pdfDoc = await PDFDocument.load(commonBytes);
+
+            // 2. 追加する画像の決定
+            const config = airportConfig[icao] || { fbos: [], ash: [] };
+            const imagePaths = [
+                ...config.fbos.map(f => `images/${f}`),
+                ...config.ash.map(a => `images/${a}`),
+                `${WORKER_URL}/?icao=${icao}&type=QMCD98`,
+                `${WORKER_URL}/?icao=${icao}&type=QMCJ98`
+            ];
+
+            // 3. 画像を1枚ずつページとして結合
+            for (const path of imagePaths) {
+                msg.innerText = `画像を追加中: ${path.split('/').pop()}`;
+                try {
+                    const imgRes = await fetch(path);
+                    if (!imgRes.ok) continue;
+                    const imgBytes = await imgRes.arrayBuffer();
+                    
+                    const img = await pdfDoc.embedPng(imgBytes);
+                    const page = pdfDoc.addPage([842, 595]); // A4横
+                    const { width, height } = img.scale(1);
+                    const ratio = Math.min(802 / width, 555 / height);
+                    
+                    page.drawImage(img, {
+                        x: (842 - width * ratio) / 2,
+                        y: (595 - height * ratio) / 2,
+                        width: width * ratio,
+                        height: height * ratio
+                    });
+                } catch (e) { console.error(e); }
+            }
+
+            // 4. ダウンロード
+            const finalBytes = await pdfDoc.save();
+            const blob = new Blob([finalBytes], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Briefing_${icao}.pdf`;
+            a.click();
+            
+            msg.innerText = "完了しました！";
+        } catch (err) {
+            msg.innerText = "エラーが発生しました。";
+            console.error(err);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+</script>
+
+</body>
+</html>
