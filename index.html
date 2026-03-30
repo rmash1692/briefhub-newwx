@@ -141,58 +141,82 @@
         genBtn.disabled = false;
     }
 
-    async function downloadAllAsPDF() {
-        if (currentImages.length === 0) {
-            return alert("先に「Generate View」を実行して画像を取得してください。");
-        }
-        const icao = document.getElementById('icao').value.toUpperCase();
+    // --- 既存のコード（saveToLocalなどはそのまま） ---
 
+async function downloadAllAsPDF() {
+    if (currentImages.length === 0) {
+        return alert("先に「Generate View」を実行して画像を取得してください。");
+    }
+    
+    const icao = document.getElementById('icao').value.toUpperCase();
+    const pdfBtn = document.getElementById('pdf-btn');
+    const originalText = pdfBtn.innerText; // "Download PDF" を保持
+
+    // ボタンの状態を「準備中」に変更
+    pdfBtn.disabled = true;
+    pdfBtn.innerText = "Preparing...";
+
+    try {
         const { PDFDocument } = PDFLib;
-        // 共通PDFは使わず、画面にある画像をベースに完全新規でPDFを作成
         const pdfDoc = await PDFDocument.create();
+        const total = currentImages.length;
 
-        for (const item of currentImages) {
+        for (let i = 0; i < total; i++) {
+            const item = currentImages[i];
+            
+            // 進捗状況を表示 (例: Generating... 25%)
+            const percent = Math.round((i / total) * 100);
+            pdfBtn.innerText = `Generating... ${percent}%`;
+            
+            // ブラウザの描画を更新させるための短い待機
+            await new Promise(r => setTimeout(r, 1));
+
             try {
                 const imgBytes = await item.blob.arrayBuffer();
                 const img = await pdfDoc.embedPng(imgBytes);
                 
                 const { width, height } = img.scale(1);
-                
-                // 画像の縦横比からページの向きを決定 (A4サイズ)
                 const isLandscape = width > height;
                 const pageWidth = isLandscape ? 842 : 595;
                 const pageHeight = isLandscape ? 595 : 842;
                 
                 const page = pdfDoc.addPage([pageWidth, pageHeight]);
                 
-                // 余白を最小限に設定 (例: 15pt) して画像を最大化
                 const margin = 10;
                 const maxW = pageWidth - margin * 2;
                 const maxH = pageHeight - margin * 2;
                 
-                // ページに収まる最大の縮小率を計算
                 const ratio = Math.min(maxW / width, maxH / height);
                 const drawW = width * ratio;
                 const drawH = height * ratio;
                 
-                // 中央に配置して描画
                 page.drawImage(img, {
                     x: (pageWidth - drawW) / 2,
                     y: (pageHeight - drawH) / 2,
                     width: drawW,
                     height: drawH
                 });
-            } catch (e) { console.warn("PDF Embed Error", e); }
+            } catch (e) { 
+                console.warn("PDF Embed Error", e); 
+            }
         }
 
+        // 保存直前
+        pdfBtn.innerText = "Saving PDF...";
         const pdfBytes = await pdfDoc.save();
+        
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = `Briefing_${icao}_${new Date().getTime()}.pdf`;
         link.click();
-    }
-</script>
 
-</body>
-</html>
+    } catch (err) {
+        console.error(err);
+        alert("PDF生成中にエラーが発生しました。");
+    } finally {
+        // ボタンを元の状態に戻す
+        pdfBtn.disabled = false;
+        pdfBtn.innerText = originalText;
+    }
+}
