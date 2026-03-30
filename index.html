@@ -44,18 +44,31 @@
     <h2>Flight Briefing</h2>
 
     <div class="search-container">
-        <input type="text" id="icao" placeholder="ICAO (RJTT RJAA...)" maxlength="4">
+        <input type="text" id="icao" placeholder="ICAO (RJTT RJAA...)" maxlength="4" oninput="saveToLocal()">
         <button id="gen-btn" onclick="generateView()">Generate View</button>
-        <button id="pdf-btn" onclick="downloadAllAsPDF()" class="btn-pdf" style="display:none;">Download PDF</button>
+        <button id="pdf-btn" onclick="downloadAllAsPDF()" class="btn-pdf">Download PDF</button>
     </div>
 
     <div id="result">
-        </div>
+    </div>
 
 <script>
     const WORKER_URL = "https://taf-proxy.bbfn2187.workers.dev";
     
-    // 共通で表示する画像リスト
+    // ページ読み込み時に保存されたICAOコードを復元
+    window.onload = () => {
+        const savedIcao = localStorage.getItem('briefing_icao');
+        if (savedIcao) {
+            document.getElementById('icao').value = savedIcao;
+        }
+    };
+
+    // 入力されるたびにlocalStorageへ保存
+    function saveToLocal() {
+        const icao = document.getElementById('icao').value.toUpperCase();
+        localStorage.setItem('briefing_icao', icao);
+    }
+
     const commonCharts = [
         { title: "ASAS Prior", file: "ASAS_Prior.png" },
         { title: "AUPQ35 (850hPa)", file: "AUPQ35_Latest.png" },
@@ -69,7 +82,6 @@
         { title: "FBJP (Wind/Temp)", file: "FBJP_Latest.png" }
     ];
 
-    // 空港別の個別設定
     const airportConfig = {
         "RJFK": { fbos: ["FBOS_West_Latest.png"], ash: ["Ashfall_Sakurajima_Latest.png"] },
         "RJCC": { fbos: ["FBOS_Hokkaido_Latest.png"], ash: [] },
@@ -78,23 +90,19 @@
         "RJOK": { fbos: ["FBOS_West_Latest.png"], ash: [] }
     };
 
-    let currentImages = []; // PDF生成用に取得済み画像を保持
+    let currentImages = [];
 
     async function generateView() {
         const icao = document.getElementById('icao').value.toUpperCase();
         const resultDiv = document.getElementById('result');
         const genBtn = document.getElementById('gen-btn');
-        const pdfBtn = document.getElementById('pdf-btn');
 
         if (icao.length < 4) return alert("ICAOコードを入力してください。");
 
-        // 初期化
         resultDiv.innerHTML = '<div class="loading">Generating Briefing Charts...</div>';
         genBtn.disabled = true;
-        pdfBtn.style.display = "none";
         currentImages = [];
 
-        // 表示する全画像のパスを決定
         const config = airportConfig[icao] || { fbos: [], ash: [] };
         const targetList = [
             ...commonCharts.map(c => ({ title: c.title, url: `images/${c.file}` })),
@@ -104,11 +112,10 @@
             { title: "TAF (QMC)", url: `${WORKER_URL}/?icao=${icao}&type=QMCJ98` }
         ];
 
-        resultDiv.innerHTML = ""; // ローディング消去
+        resultDiv.innerHTML = "";
 
         for (const item of targetList) {
             try {
-                // 画像の存在確認を兼ねてフェッチ
                 const res = await fetch(item.url);
                 if (!res.ok) continue;
 
@@ -116,7 +123,6 @@
                 const objUrl = URL.createObjectURL(blob);
                 currentImages.push({ title: item.title, blob: blob });
 
-                // カード要素を作成して追加
                 const card = document.createElement('div');
                 card.className = 'card';
                 card.innerHTML = `
@@ -129,39 +135,52 @@
             }
         }
 
-        if (currentImages.length > 0) {
-            pdfBtn.style.display = "inline-block";
-        } else {
+        if (currentImages.length === 0) {
             resultDiv.innerHTML = '<div class="error-msg">有効な画像が見つかりませんでした。</div>';
         }
         genBtn.disabled = false;
     }
 
     async function downloadAllAsPDF() {
+        if (currentImages.length === 0) {
+            return alert("先に「Generate View」を実行して画像を取得してください。");
+        }
         const icao = document.getElementById('icao').value.toUpperCase();
-        if (currentImages.length === 0) return;
 
         const { PDFDocument } = PDFLib;
-        const pdfDoc = await PDFDocument.load(await fetch(`images/Common_Briefing.pdf?t=${Date.now()}`).then(r => r.arrayBuffer()).catch(() => null)) 
-                       || await PDFDocument.create();
+        // 共通PDFは使わず、画面にある画像をベースに完全新規でPDFを作成
+        const pdfDoc = await PDFDocument.create();
 
         for (const item of currentImages) {
-            // すでにPDF内に含まれている可能性のある共通画像は除外して追加、
-            // もしくは完全に新規で作成する場合はここですべてembedする
-            // 今回は「画面に映っているものをそのまま束ねる」ロジックにします
             try {
                 const imgBytes = await item.blob.arrayBuffer();
                 const img = await pdfDoc.embedPng(imgBytes);
                 
-                const page = pdfDoc.addPage([842, 595]); // A4 Landscape
                 const { width, height } = img.scale(1);
-                const ratio = Math.min(802 / width, 555 / height);
                 
+                // 画像の縦横比からページの向きを決定 (A4サイズ)
+                const isLandscape = width > height;
+                const pageWidth = isLandscape ? 842 : 595;
+                const pageHeight = isLandscape ? 595 : 842;
+                
+                const page = pdfDoc.addPage([pageWidth, pageHeight]);
+                
+                // 余白を最小限に設定 (例: 15pt) して画像を最大化
+                const margin = 15;
+                const maxW = pageWidth - margin * 2;
+                const maxH = pageHeight - margin * 2;
+                
+                // ページに収まる最大の縮小率を計算
+                const ratio = Math.min(maxW / width, maxH / height);
+                const drawW = width * ratio;
+                const drawH = height * ratio;
+                
+                // 中央に配置して描画
                 page.drawImage(img, {
-                    x: (842 - width * ratio) / 2,
-                    y: (595 - height * ratio) / 2,
-                    width: width * ratio,
-                    height: height * ratio
+                    x: (pageWidth - drawW) / 2,
+                    y: (pageHeight - drawH) / 2,
+                    width: drawW,
+                    height: drawH
                 });
             } catch (e) { console.warn("PDF Embed Error", e); }
         }
