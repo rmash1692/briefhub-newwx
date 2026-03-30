@@ -150,8 +150,8 @@
             ...commonCharts.map(c => ({ title: c.title, url: `images/${c.file}` })),
             ...config.fbos.map(f => ({ title: "FBOS", url: `images/${f}` })),
             ...config.ash.map(a => ({ title: "Ashfall Forecast", url: `images/${a}` })),
-            { title: "METAR (QMC)", url: `${WORKER_URL}/?icao=${icao}&type=QMCD98` },
-            { title: "TAF (QMC)", url: `${WORKER_URL}/?icao=${icao}&type=QMCJ98` }
+            { title: "飛行場時系列予報 Part1", url: `${WORKER_URL}/?icao=${icao}&type=QMCD98` },
+            { title: "飛行場時系列予報 Part2", url: `${WORKER_URL}/?icao=${icao}&type=QMCJ98` }
         ];
 
         resultDiv.innerHTML = "";
