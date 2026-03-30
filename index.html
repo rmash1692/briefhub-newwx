@@ -6,7 +6,6 @@
     <title>BriefHub WX - Flight Briefing</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <style>
-        /* 提供いただいたMETAR/TAFのデザインを継承 */
         body { font-family: Arial, sans-serif; color: #333; max-width: 950px; margin: 0 auto; padding: 20px; background-color: #fff; }
         h2 { text-align: center; font-weight: normal; border-bottom: 2px solid #0078D4; padding-bottom: 15px; margin-bottom: 20px; letter-spacing: 1px; color: #0078D4; }
         
@@ -17,7 +16,7 @@
         input[type="text"] { padding: 10px; font-size: 16px; border: 1px solid #ccc; width: 250px; text-transform: uppercase; outline: none; }
         input[type="text"]:focus { border-color: #0078D4; }
         
-        button { padding: 10px 20px; font-size: 16px; background-color: #0078D4; color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; }
+        button { padding: 10px 20px; font-size: 16px; background-color: #0078D4; color: white; border: none; cursor: pointer; border-radius: 4px; }
         button:hover { background-color: #005a9e; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
         
@@ -45,7 +44,7 @@
     <h2>Flight Briefing</h2>
 
     <div class="search-container">
-        <input type="text" id="icao" placeholder="ICAO (e.g. RJFK)" maxlength="4">
+        <input type="text" id="icao" placeholder="ICAO (RJTT RJAA...)" maxlength="4">
         <button id="gen-btn" onclick="generateView()">Generate View</button>
         <button id="pdf-btn" onclick="downloadAllAsPDF()" class="btn-pdf" style="display:none;">Download PDF</button>
     </div>
@@ -59,10 +58,10 @@
     // 共通で表示する画像リスト
     const commonCharts = [
         { title: "ASAS Prior", file: "ASAS_Prior.png" },
-        { title: "ASAS Latest", file: "ASAS_Latest.png" },
-        { title: "FSAS Latest", file: "FSAS_Latest.png" },
         { title: "AUPQ35 (850hPa)", file: "AUPQ35_Latest.png" },
         { title: "AUPQ78 (500/300hPa)", file: "AUPQ78_Latest.png" },
+        { title: "ASAS Latest", file: "ASAS_Latest.png" },
+        { title: "FSAS Latest", file: "FSAS_Latest.png" },
         { title: "FXFE502", file: "FXFE502_Latest.png" },
         { title: "FXFE5782", file: "FXFE5782_Latest.png" },
         { title: "FXJP854", file: "FXJP854_Latest.png" },
