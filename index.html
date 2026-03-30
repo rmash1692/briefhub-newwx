@@ -93,55 +93,64 @@
     let currentImages = [];
 
     async function generateView() {
-        const icao = document.getElementById('icao').value.toUpperCase();
-        const resultDiv = document.getElementById('result');
-        const genBtn = document.getElementById('gen-btn');
+        const icao = document.getElementById('icao').value.toUpperCase();
+        const resultDiv = document.getElementById('result');
+        const genBtn = document.getElementById('gen-btn');
 
-        if (icao.length < 4) return alert("ICAOコードを入力してください。");
+        if (icao.length < 4) return alert("ICAOコードを入力してください。");
 
-        resultDiv.innerHTML = '<div class="loading">Generating Briefing Charts...</div>';
-        genBtn.disabled = true;
-        currentImages = [];
+        // ローディング表示を開始
+        resultDiv.innerHTML = '<div class="loading">Generating Briefing Charts... Please wait.</div>';
+        genBtn.disabled = true;
+        currentImages = [];
 
-        const config = airportConfig[icao] || { fbos: [], ash: [] };
-        const targetList = [
-            ...commonCharts.map(c => ({ title: c.title, url: `images/${c.file}` })),
-            ...config.fbos.map(f => ({ title: "FBOS", url: `images/${f}` })),
-            ...config.ash.map(a => ({ title: "Ashfall Forecast", url: `images/${a}` })),
-            { title: "METAR (QMC)", url: `${WORKER_URL}/?icao=${icao}&type=QMCD98` },
-            { title: "TAF (QMC)", url: `${WORKER_URL}/?icao=${icao}&type=QMCJ98` }
-        ];
+        const config = airportConfig[icao] || { fbos: [], ash: [] };
+        const targetList = [
+            ...commonCharts.map(c => ({ title: c.title, url: `images/${c.file}` })),
+            ...config.fbos.map(f => ({ title: "FBOS", url: `images/${f}` })),
+            ...config.ash.map(a => ({ title: "Ashfall Forecast", url: `images/${a}` })),
+            { title: "METAR (QMC)", url: `${WORKER_URL}/?icao=${icao}&type=QMCD98` },
+            { title: "TAF (QMC)", url: `${WORKER_URL}/?icao=${icao}&type=QMCJ98` }
+        ];
 
-        resultDiv.innerHTML = "";
+        // 取得した画像カードを一時的に貯めておくためのフラグメント
+        const fragment = document.createDocumentFragment();
 
-        for (const item of targetList) {
-            try {
-                const res = await fetch(item.url);
-                if (!res.ok) continue;
+        for (const item of targetList) {
+            try {
+                const res = await fetch(item.url);
+                if (!res.ok) {
+                    console.warn("Not found / Error:", item.url);
+                    continue;
+                }
 
-                const blob = await res.blob();
-                const objUrl = URL.createObjectURL(blob);
-                currentImages.push({ title: item.title, blob: blob });
+                const blob = await res.blob();
+                const objUrl = URL.createObjectURL(blob);
+                currentImages.push({ title: item.title, blob: blob });
 
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <h3>${item.title} <span style="font-size:12px; color:#999;">${icao}</span></h3>
-                    <img src="${objUrl}" class="chart-img" alt="${item.title}">
-                `;
-                resultDiv.appendChild(card);
-            } catch (e) {
-                console.error("Load failed:", item.url);
-            }
-        }
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <h3>${item.title} <span style="font-size:12px; color:#999;">${icao}</span></h3>
+                    <img src="${objUrl}" class="chart-img" alt="${item.title}">
+                `;
+                fragment.appendChild(card);
+            } catch (e) {
+                console.error("Fetch failed (Local CORS or Network error):", item.url, e);
+            }
+        }
 
-        if (currentImages.length === 0) {
-            resultDiv.innerHTML = '<div class="error-msg">有効な画像が見つかりませんでした。</div>';
-        }
-        genBtn.disabled = false;
-    }
+        // 画像の取得処理がすべて終わった段階でローディングを消し、結果を表示
+        resultDiv.innerHTML = ""; 
 
-    // --- 既存のコード（saveToLocalなどはそのまま） ---
+        if (currentImages.length === 0) {
+            resultDiv.innerHTML = '<div class="error-msg">有効な画像が見つかりませんでした。<br><span style="font-size:13px;">※ローカル（ダブルクリック）で開いている場合、セキュリティ制限で取得できません。GitHub等に上げるか、ローカルサーバーをご利用ください。</span></div>';
+        } else {
+            resultDiv.appendChild(fragment);
+        }
+
+        genBtn.disabled = false;
+    }
 
 async function downloadAllAsPDF() {
     if (currentImages.length === 0) {
