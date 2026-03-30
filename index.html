@@ -23,6 +23,39 @@
         .btn-pdf { background-color: #28a745; }
         .btn-pdf:hover { background-color: #218838; }
 
+        /* PDF生成中ポップアップ用のスタイル */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none; /* 初期状態は非表示 */
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .overlay-content {
+            background: #fff;
+            padding: 30px 40px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #0078D4;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .spinner {
+            margin: 0 auto 15px auto;
+            width: 40px; height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #0078D4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 
+            0% { transform: rotate(0deg); } 
+            100% { transform: rotate(360deg); } 
+        }
+
         /* 天気図表示用カードスタイル */
         .card { 
             border-left: 4px solid #0078D4; border-top: 1px solid #eee; border-right: 1px solid #eee; 
@@ -40,6 +73,15 @@
     </style>
 </head>
 <body>
+
+    <!-- PDF生成中のオーバーレイ -->
+    <div id="pdf-overlay" class="overlay">
+        <div class="overlay-content">
+            <div class="spinner"></div>
+            Preparing Download...<br>
+            <span style="font-size: 14px; color: #666; font-weight: normal;">Please wait a moment.</span>
+        </div>
+    </div>
 
     <h2>Flight Briefing</h2>
 
@@ -145,52 +187,64 @@
         if (currentImages.length === 0) {
             return alert("先に「Generate View」を実行して画像を取得してください。");
         }
-        const icao = document.getElementById('icao').value.toUpperCase();
 
-        const { PDFDocument } = PDFLib;
-        // 共通PDFは使わず、画面にある画像をベースに完全新規でPDFを作成
-        const pdfDoc = await PDFDocument.create();
+        const overlay = document.getElementById('pdf-overlay');
+        
+        // 1. ポップアップを表示
+        overlay.style.display = 'flex';
 
-        for (const item of currentImages) {
-            try {
-                const imgBytes = await item.blob.arrayBuffer();
-                const img = await pdfDoc.embedPng(imgBytes);
+        // 2. 画面にポップアップが描画される時間を確保するため、少しだけ待機
+        // ※JavaScriptの仕様上、この待機がないとPDF処理に全力が注がれ、ポップアップが表示されません
+        await new Promise(resolve => setTimeout(resolve, 50));
 
-                const { width, height } = img.scale(1);
+        try {
+            const icao = document.getElementById('icao').value.toUpperCase();
+            const { PDFDocument } = PDFLib;
+            const pdfDoc = await PDFDocument.create();
 
-                // 画像の縦横比からページの向きを決定 (A4サイズ)
-                const isLandscape = width > height;
-                const pageWidth = isLandscape ? 842 : 595;
-                const pageHeight = isLandscape ? 595 : 842;
+            for (const item of currentImages) {
+                try {
+                    const imgBytes = await item.blob.arrayBuffer();
+                    const img = await pdfDoc.embedPng(imgBytes);
 
-                const page = pdfDoc.addPage([pageWidth, pageHeight]);
+                    const { width, height } = img.scale(1);
+                    const isLandscape = width > height;
+                    const pageWidth = isLandscape ? 842 : 595;
+                    const pageHeight = isLandscape ? 595 : 842;
 
-                // 余白を最小限に設定 (例: 15pt) して画像を最大化
-                const margin = 10;
-                const maxW = pageWidth - margin * 2;
-                const maxH = pageHeight - margin * 2;
+                    const page = pdfDoc.addPage([pageWidth, pageHeight]);
 
-                // ページに収まる最大の縮小率を計算
-                const ratio = Math.min(maxW / width, maxH / height);
-                const drawW = width * ratio;
-                const drawH = height * ratio;
+                    const margin = 10; // 重複していた変数を修正
+                    const maxW = pageWidth - margin * 2;
+                    const maxH = pageHeight - margin * 2;
 
-                // 中央に配置して描画
-                page.drawImage(img, {
-                    x: (pageWidth - drawW) / 2,
-                    y: (pageHeight - drawH) / 2,
-                    width: drawW,
-                    height: drawH
-                });
-            } catch (e) { console.warn("PDF Embed Error", e); }
+                    const ratio = Math.min(maxW / width, maxH / height);
+                    const drawW = width * ratio;
+                    const drawH = height * ratio;
+
+                    page.drawImage(img, {
+                        x: (pageWidth - drawW) / 2,
+                        y: (pageHeight - drawH) / 2,
+                        width: drawW,
+                        height: drawH
+                    });
+                } catch (e) { console.warn("PDF Embed Error", e); }
+            }
+
+            const pdfBytes = await pdfDoc.save();
+            const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Briefing_${icao}_${new Date().getTime()}.pdf`;
+            link.click();
+
+        } catch (error) {
+            console.error(error);
+            alert("PDF生成中にエラーが発生しました。");
+        } finally {
+            // 3. 処理が完了した（またはエラーになった）段階でポップアップを非表示に戻す
+            overlay.style.display = 'none';
         }
-
-        const pdfBytes = await pdfDoc.save();
-        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `Briefing_${icao}_${new Date().getTime()}.pdf`;
-        link.click();
     }
 </script>
 
