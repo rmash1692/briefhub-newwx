@@ -278,7 +278,7 @@ for code, name in sigwx_regions.items():
         
         if png:
             # HTML側で呼び出しやすいよう "FBOS_地域名_タイプ_Latest.png" で保存
-            final_name = f"FBOS_{name}{f_type}_Latest.png"
+            final_name = f"FBOS{f_type}_{name}_Latest.png"
             direct_png_upload(png, final_name)
 # --- 降灰予報図 (合成不要) ---
 ash_volcanoes = [("Sakurajima", "JR506X"), ("Kirishimayama", "JR551X")]
