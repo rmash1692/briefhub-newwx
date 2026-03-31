@@ -171,7 +171,12 @@ const airportConfig = {
         const config = airportConfig[icao] || { fbos: [], ash: [] };
         const targetList = [
             ...commonCharts.map(c => ({ title: c.title, url: `images/${c.file}` })),
-            ...config.fbos.map(f => ({ title: "下層悪天予想図", url: `images/${f}` })),
+            ...config.fbos.map(f => {
+                let fbosTitle = "下層悪天予想図";
+                if (f.includes("06")) fbosTitle = "下層悪天予想図 6時間予想図";
+                if (f.includes("39")) fbosTitle = "下層悪天予想図 時系列予想図";
+                return { title: fbosTitle, url: `images/${f}` };
+            }),
             ...config.ash.map(a => ({ title: "降灰予想図", url: `images/${a}` })),
             { title: "飛行場時系列予報 Part1", url: `${WORKER_URL}/?icao=${icao}&type=QMCD98` },
             { title: "飛行場時系列予報 Part2", url: `${WORKER_URL}/?icao=${icao}&type=QMCJ98` }
