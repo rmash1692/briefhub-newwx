@@ -192,7 +192,7 @@ const airportConfig = {
         "RJFF": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
         "RJFS": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
         "RJFT": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
-        "RJFM": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
+        "RJFM": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: ["Ashfall_Kirishimayama_Latest.png"] },
         "RJFU": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
         "RJFK": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: ["Ashfall_Sakurajima_Latest.png", "Ashfall_Kirishimayama_Latest.png"] },
         "RJFE": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
@@ -242,8 +242,8 @@ const airportConfig = {
             ...commonCharts.map(c => ({ title: c.title, url: `images/${c.file}` })),
             ...config.fbos.map(f => {
                 let fbosTitle = "下層悪天予想図";
-                if (f.includes("06")) fbosTitle = "下層悪天予想図 6時間予想図";
-                if (f.includes("39")) fbosTitle = "下層悪天予想図 時系列予想図";
+                if (f.includes("06")) fbosTitle = "下層悪天予想図 6時間予想";
+                if (f.includes("39")) fbosTitle = "下層悪天予想図 時系列予想";
                 return { title: fbosTitle, url: `images/${f}` };
             }),
             ...config.ash.map(a => ({ title: "降灰予想図", url: `images/${a}` })),
