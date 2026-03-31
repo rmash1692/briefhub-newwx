@@ -125,34 +125,103 @@
     ];
 
 const airportConfig = {
-        "RJCC": { 
-            fbos: ["FBOS_Hokkaido_06_Latest.png", "FBOS_Hokkaido_39_Latest.png"], 
-            ash: [] 
-        },
-        "RJSS": { 
-            fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], 
-            ash: [] 
-        },
-        "RJSF": { 
-            fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], 
-            ash: [] 
-        },
-        "RJTT": { 
-            fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], 
-            ash: [] 
-        },
-        "RJFK": { 
-            fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], 
-            ash: ["Ashfall_Sakurajima_Latest.png", "Ashfall_Kirishimayama_Latest.png"] 
-        },
-        "RJFF": { 
-            fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], 
-            ash: [] 
-        },
-        "RJOK": { 
-            fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], 
-            ash: [] 
-        }
+        // --- 北海道 ---
+        "RJCW": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
+        "RJER": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
+        "RJEB": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
+        "RJCM": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
+        "RJCN": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
+        "RJEC": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
+        "RJCK": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
+        "RJCB": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
+        "RJCT": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
+        "RJCO": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
+        "RJCC": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
+        "RJCY": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
+        "RJEO": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
+        "RJCH": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
+
+        // --- 東北 ---
+        "RJSO": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
+        "RJSA": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
+        "RJSM": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
+        "RJSR": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
+        "RJSK": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
+        "RJSI": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
+        "RJSY": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
+        "RJSC": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
+        "RJST": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
+        "RJSS": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
+        "RJSF": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
+
+        // --- 東日本 ---
+        "RJSD": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
+        "RJSN": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
+        "RJAH": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
+        "RJAA": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
+        "RJAK": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
+        "RJTT": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
+        "RJTF": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
+        "RJNN": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
+        "RJNT": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
+        "RJAF": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
+        "RJNK": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
+        "RJNF": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
+        "RJNA": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
+        "RJGG": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
+        "RJNS": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
+        "RJTO": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
+        "RJAN": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
+        "RJAZ": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
+        "RJTQ": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
+        "RJTH": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
+
+        // --- 西日本 ---
+        "RJNO": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
+        "RJOC": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
+        "RJOK": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
+        "RJBT": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
+        "RJOY": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
+        "RJOB": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
+        "RJOA": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
+        "RJBD": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
+        "RJOR": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
+        "RJOM": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
+        "RJFO": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
+        "RJFR": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
+        "RJFF": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
+        "RJFS": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
+        "RJFT": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
+        "RJFM": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
+        "RJFU": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
+        "RJFK": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: ["Ashfall_Sakurajima_Latest.png", "Ashfall_Kirishimayama_Latest.png"] },
+        "RJFE": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
+        "RJDT": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
+
+        // --- 奄美 ---
+        "RJFG": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
+        "RJFC": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
+        "RJKA": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
+        "RJKI": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
+        "RJKN": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
+        "RJKB": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
+        "RORY": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
+        "RORK": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
+        "ROMD": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
+
+        // --- 沖縄 ---
+        "RORE": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
+        "RORA": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
+        "ROKJ": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
+        "RODN": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
+        "ROAH": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
+        "ROKR": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
+        "RORS": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
+        "ROMY": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
+        "RORT": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
+        "ROIG": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
+        "RORH": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
+        "ROYN": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] }
     };
 
     let currentImages = [];
