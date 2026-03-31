@@ -124,12 +124,27 @@
         { title: "国内悪天予想図", file: "FBJP_Latest.png" }
     ];
 
-    const airportConfig = {
-        "RJFK": { fbos: ["FBOS_West_Kyushu_Latest.png"], ash: ["Ashfall_Sakurajima_Latest.png"], ash: ["Ashfall_Kirishimayama_Latest.png"] },
-        "RJCC": { fbos: ["FBOS_Hokkaido_Latest.png"], ash: [] },
-        "RJTT": { fbos: ["FBOS_East_Latest.png"], ash: [] },
-        "RJFF": { fbos: ["FBOS_West_Latest.png"], ash: [] },
-        "RJOK": { fbos: ["FBOS_West_Latest.png"], ash: [] }
+const airportConfig = {
+        "RJCC": { 
+            fbos: ["FBOS_Hokkaido_06_Latest.png", "FBOS_Hokkaido_39_Latest.png"], 
+            ash: [] 
+        },
+        "RJTT": { 
+            fbos: ["FBOS_East_06_Latest.png", "FBOS_East_39_Latest.png"], 
+            ash: [] 
+        },
+        "RJFK": { 
+            fbos: ["FBOS_West_06_Latest.png", "FBOS_West_39_Latest.png"], 
+            ash: ["Ashfall_Sakurajima_Latest.png", "Ashfall_Kirishimayama_Latest.png] 
+        },
+        "RJFF": { 
+            fbos: ["FBOS_West_06_Latest.png", "FBOS_West_39_Latest.png"], 
+            ash: [] 
+        },
+        "RJOK": { 
+            fbos: ["FBOS_West_06_Latest.png", "FBOS_West_39_Latest.png"], 
+            ash: [] 
+        }
     };
 
     let currentImages = [];
