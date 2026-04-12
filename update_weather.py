@@ -44,14 +44,42 @@ def download_fsas_pdf():
     return None
 
 def download_jma_nwpmap_pdf(chart_type, target_time):
+    # ターゲット時刻（UTC）から "00" または "12" を取得
     hh = target_time.strftime("%H")
+    
+    # 常に _00.pdf または _12.pdf となる固定URL
     url = f"https://www.jma.go.jp/bosai/numericmap/data/nwpmap/{chart_type}_{hh}.pdf"
+    
+    # ローカル保存時は上書きを防ぐため日付・時刻を付与
     filename = f"{chart_type.upper()}_{target_time.strftime('%Y%m%d%H%M')}.pdf"
-    r = requests.get(url)
+    
+    try:
+        # キャッシュを回避して最新のヘッダー情報を取得
+        headers = {'Cache-Control': 'no-cache', 'Pragma': 'no-cache'}
+        head_req = requests.head(url, headers=headers, timeout=10)
+        
+        if head_req.status_code == 200:
+            last_modified_str = head_req.headers.get('Last-Modified')
+            if last_modified_str:
+                last_modified_dt = parsedate_to_datetime(last_modified_str)
+                
+                # 【重要】固定URL対策
+                # ファイルの最終更新日時が、目標時刻(target_time)よりも古い場合、
+                # サーバー上のファイルはまだ「前日の00/12UTCのもの」であるためスキップする
+                if last_modified_dt < target_time:
+                    return None
+    except Exception as e:
+        # HEADリクエストが弾かれた等の場合は、安全のため後続のGETを試行する
+        pass
+
+    # 本ダウンロード
+    headers = {'Cache-Control': 'no-cache', 'Pragma': 'no-cache'}
+    r = requests.get(url, headers=headers, timeout=20)
     if r.status_code == 200:
         with open(filename, "wb") as f:
             f.write(r.content)
         return filename
+        
     return None
 
 def download_jma_png(url, chart_type_name):
