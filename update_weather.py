@@ -6,7 +6,6 @@ import shutil
 import os
 from PIL import Image
 
-# HTTPヘッダーの日付解析用
 from email.utils import parsedate_to_datetime 
 
 # -----------------------------------
@@ -94,7 +93,6 @@ def download_jma_ashfall_pdf(chart_id, target_time_jst):
         return filename
     return None
 
-# 短期解説資料
 def download_kaisetsu_tanki_pdf():
     url = "https://www.data.jma.go.jp/yoho/data/jishin/kaisetsu_tanki_latest.pdf"
     filename = "kaisetsu_tanki_latest.pdf"
@@ -144,7 +142,7 @@ def download_himawari_msc_image(img_type):
             print(f"  検証中にエラーが発生しました: {e}")
             continue
             
-    print(f"❌ ひまわり画像 ({img_type}) の有効な最新画像が見つかりませんでした。")
+    print(f"ひまわり画像 ({img_type}) の有効な最新画像が見つかりませんでした。")
     return None
 
 # -----------------------------------
