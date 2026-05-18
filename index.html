@@ -106,20 +106,33 @@
     }
 
     // ひまわり画像はWorker経由でオンデマンド取得するため、フラグ（isWorker: true）を持たせます
-    const commonCharts = [
-        { title: "ASAS Prior", file: "ASAS_Prior.png", isWorker: false },
-        { title: "AUPQ35", file: "AUPQ35_Latest.png", isWorker: false },
-        { title: "AUPQ78", file: "AUPQ78_Latest.png", isWorker: false },
-        { title: "ASAS Latest", file: "ASAS_Latest.png", isWorker: false },
-        { title: "可視画像", file: "himawari_vis", isWorker: true }, 
-        { title: "赤外画像", file: "himawari_ir", isWorker: true },
-        { title: "FSAS24", file: "FSAS_Latest.png", isWorker: false },
-        { title: "FXFE502", file: "FXFE502_Latest.png", isWorker: false },
-        { title: "FXFE5782", file: "FXFE5782_Latest.png", isWorker: false },
-        { title: "FXJP854", file: "FXJP854_Latest.png", isWorker: false },
-        { title: "国内航空路予想断面図", file: "FXJP106_Latest.png", isWorker: false },
-        { title: "国内悪天予想図", file: "FBJP_Latest.png", isWorker: false },
-    ];
+    // 1. チャートリストの定義
+const commonCharts = [
+    { title: "ASAS Prior", file: "ASAS_Prior.png", isWorker: false },
+    { title: "AUPQ35", file: "AUPQ35_Latest.png", isWorker: false },
+    { title: "AUPQ78", file: "AUPQ78_Latest.png", isWorker: false },
+    { title: "ASAS Latest", file: "ASAS_Latest.png", isWorker: false },
+    { title: "可視画像", file: "himawari_vis", isWorker: true }, // file名をWorkerのtypeへ
+    { title: "赤外画像", file: "himawari_ir", isWorker: true },  // file名をWorkerのtypeへ
+    { title: "FSAS24", file: "FSAS_Latest.png", isWorker: false },
+    { title: "FXFE502", file: "FXFE502_Latest.png", isWorker: false },
+    { title: "FXFE5782", file: "FXFE5782_Latest.png", isWorker: false },
+    { title: "FXJP854", file: "FXJP854_Latest.png", isWorker: false },
+    { title: "国内航空路予想断面図", file: "FXJP106_Latest.png", isWorker: false },
+    { title: "国内悪天予想図", file: "FBJP_Latest.png", isWorker: false },
+];
+
+// 2. generateView() 内のURL振り分けロジック部分
+const targetList = [
+    ...commonCharts.map(c => {
+        if (c.isWorker) {
+            // ひまわり画像はWorkerにtypeパラメータを投げて任せる
+            return { title: c.title, url: `${WORKER_URL}/?type=${c.file}` };
+        }
+        return { title: c.title, url: `images/${c.file}` };
+    }),
+    // ...以降の config.fbos や TAF(QMCD98) の処理はそのまま変更なし
+];
 
     const airportConfig = {
         "RJCW": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
