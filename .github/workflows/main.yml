@@ -1,11 +1,6 @@
 name: Update Aviation Weather Charts
 
 on:
-  schedule:
-    # JST 09:00〜翌05:30 (UTC 00:00〜20:00) : 30分間隔 (毎時0分, 30分)
-    - cron: '0,30 0-20 * * *'
-    # JST 06:00〜08:40 (UTC 21:00〜23:00) : 20分間隔 (毎時0分, 20分, 40分)
-    - cron: '*/20 21-23 * * *'
   workflow_dispatch:
     # 手動実行ボタンを有効化
   push:
