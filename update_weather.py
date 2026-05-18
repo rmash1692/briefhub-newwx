@@ -368,8 +368,8 @@ def create_common_pdf(image_folder):
     # ★変更: ひまわり画像(Visible, Infrared)をリスト内の時系列的に自然な順序（ASASの次）に追加
     target_images = [
         "ASAS_Prior.png", "ASAS_Latest.png",
-        "Himawari_Visible.png", "Himawari_Infrared.png",
         "AUPQ35_Latest.png", "AUPQ78_Latest.png",
+        "Himawari_Visible.png", "Himawari_Infrared.png",
         "FSAS_Latest.png",
         "FXFE502_Latest.png", "FXFE5782_Latest.png",
         "FXJP854_Latest.png", "FXJP106_Latest.png",
