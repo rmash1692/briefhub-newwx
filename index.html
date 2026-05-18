@@ -152,7 +152,6 @@
         "RJSC": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
         "RJST": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
         "RJSS": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
-        // ★修正: RJSFに kaisetsu 配列を追加し、短期解説資料のファイル名を指定
         "RJSF": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [], kaisetsu: ["kaisetsu_tanki_latest.png"] },
 
         // --- 東日本 ---
@@ -238,7 +237,6 @@
         genBtn.disabled = true;
         currentImages = [];
 
-        // ★修正: kaisetsuプロパティのデフォルト空配列を追加
         const config = airportConfig[icao] || { fbos: [], ash: [], kaisetsu: [] };
         
         const targetList = [
@@ -250,8 +248,7 @@
                 return { title: fbosTitle, url: `images/${f}` };
             }),
             ...config.ash.map(a => ({ title: "降灰予想図", url: `images/${a}` })),
-            // ★修正: kaisetsu配列が存在する場合、読み込みリスト（targetList）に「短期解説資料」として追加する
-            ...(config.kaisetsu || []).map(k => ({ title: "短期解説資料", url: `images/${k}` })),
+            ...(config.kaisetsu || []).map(k => ({ title: "短期予報解説資料", url: `images/${k}` })),
             { title: "飛行場時系列予報 Part1", url: `${WORKER_URL}/?icao=${icao}&type=QMCD98` },
             { title: "飛行場時系列予報 Part2", url: `${WORKER_URL}/?icao=${icao}&type=QMCJ98` }
         ];
