@@ -62,12 +62,21 @@
         }
         .card h3 { 
             margin: 0 0 15px 0; font-size: 18px; color: #0078D4; border-bottom: 1px dashed #eee; 
-            padding-bottom: 10px; display: flex; justify-content: space-between;
+            padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
         }
         .chart-img { width: 100%; height: auto; display: block; border-radius: 2px; }
 
         .loading { text-align: center; color: #0078D4; font-weight: bold; padding: 20px; }
         .error-msg { color: #d9534f; background: #fdf7f7; padding: 10px; border-radius: 4px; margin-bottom: 10px; text-align: center; }
+
+        /* METAR/TAF 追加スタイル */
+        .data-section { margin-bottom: 15px; }
+        .data-label { font-weight: bold; font-size: 14px; margin-bottom: 5px; color: #0078D4; }
+        .jst-time { font-size: 12px; color: #777; font-weight: normal; margin-left: 10px; }
+        .raw-text { font-family: 'Courier New', Courier, monospace; background-color: #f9f9f9; padding: 12px; border: 1px solid #eee; white-space: pre-wrap; word-wrap: break-word; font-size: 15px; line-height: 1.4; }
+        .msg-none { color: #777; font-style: italic; }
+        .metar-item-wrap { border-bottom: 1px dashed #ddd; padding-bottom: 15px; margin-bottom: 15px; }
+        .metar-item-wrap:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
     </style>
 </head>
 <body>
@@ -105,7 +114,7 @@
         localStorage.setItem('briefing_icao', icao);
     }
 
-    // 定数・設定データ定義
+    // 定数・設定データ定義 (isMetarTafのダミーデータを挿入)
     const commonCharts = [
         { title: "ASAS Prior", file: "ASAS_Prior.png", isWorker: false },
         { title: "AUPQ35", file: "AUPQ35_Latest.png", isWorker: false },
@@ -113,6 +122,7 @@
         { title: "ASAS Latest", file: "ASAS_Latest.png", isWorker: false },
         { title: "可視画像", file: "himawari_vis", isWorker: true }, 
         { title: "赤外画像", file: "himawari_ir", isWorker: true }, 
+        { isMetarTaf: true }, // ← ここにMETAR/TAFを差し込むための目印
         { title: "FSAS24", file: "FSAS_Latest.png", isWorker: false },
         { title: "FXFE502", file: "FXFE502_Latest.png", isWorker: false },
         { title: "FXFE5782", file: "FXFE5782_Latest.png", isWorker: false },
@@ -226,9 +236,10 @@
 
         const config = airportConfig[icao] || { fbos: [], ash: [], kaisetsu: [] };
         
-        // ターゲットURLリストの組み立て（スコープ内に正しく配置）
+        // ターゲットURLリストの組み立て
         const targetList = [
             ...commonCharts.map(c => {
+                if (c.isMetarTaf) return c; // METAR/TAFマーカーをそのまま通す
                 if (c.isWorker) {
                     return { title: c.title, url: `${WORKER_URL}/?type=${c.file}` };
                 }
@@ -249,6 +260,27 @@
         resultDiv.innerHTML = "";
 
         for (const item of targetList) {
+            // METAR/TAF表示枠の挿入
+            if (item.isMetarTaf) {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <h3>METAR / TAF
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <span style="font-size:14px; font-weight:normal; color:#333;">空港を追加:</span>
+                            <input type="text" id="extra-icao" placeholder="例: RJTT" maxlength="4" style="width: 80px; padding: 4px 8px; font-size: 14px; text-transform: uppercase;">
+                            <button onclick="addExtraMetarTaf()" style="padding: 4px 10px; font-size: 14px; margin: 0;">追加</button>
+                        </div>
+                    </h3>
+                    <div id="metar-taf-content"></div>
+                `;
+                resultDiv.appendChild(card);
+                // 非同期でMETAR/TAFを取得（画像取得をブロックさせないためawaitしない）
+                fetchAndRenderMetarTaf([icao], 'metar-taf-content');
+                continue;
+            }
+
+            // 通常の画像処理
             try {
                 const res = await fetch(item.url);
                 if (!res.ok) continue;
@@ -275,6 +307,119 @@
         genBtn.disabled = false;
     }
 
+    // --- METAR / TAF 関連の関数群 ---
+    async function safeFetchJson(url) {
+        try {
+            const res = await fetch(url);
+            if (res.status === 204 || !res.ok) return { error: true };
+            return await res.json();
+        } catch (e) { return { error: true }; }
+    }
+
+    function formatTaf(text) {
+        const keywords = ['TEMPO', 'BECMG', 'FM', 'PROB', 'INTER'];
+        let formatted = text;
+        keywords.forEach(key => {
+            const regex = new RegExp(`\\s(${key})`, 'g');
+            formatted = formatted.replace(regex, '\n  $1');
+        });
+        return formatted;
+    }
+
+    function convertToJST(rawText) {
+        if (!rawText) return "";
+        const match = rawText.match(/\b(\d{2})(\d{2})(\d{2})Z\b/);
+        if (match) {
+            let d = new Date();
+            let targetDay = parseInt(match[1], 10);
+            if (targetDay > d.getUTCDate() + 15) d.setUTCMonth(d.getUTCMonth() - 1);
+            d.setUTCDate(targetDay);
+            d.setUTCHours(parseInt(match[2], 10));
+            d.setUTCMinutes(parseInt(match[3], 10));
+            return `<span class="jst-time">(JST : ${d.getDate().toString().padStart(2, '0')}日 ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}発行)</span>`;
+        }
+        return "";
+    }
+
+    function judgeFlightCategory(metar) {
+        if (!metar || metar.includes("ありません")) return null;
+        if (metar.includes("CAVOK")) return { label: "VMC", color: [0, 128, 0] }; 
+
+        const visMatch = metar.match(/\b(\d{4})\b/);
+        if (visMatch) {
+            const vis = parseInt(visMatch[1], 10);
+            if (vis < 5000) return { label: "IMC", color: [220, 53, 69] };
+        }
+
+        const cloudMatches = metar.matchAll(/\b(BKN|OVC)(\d{3})\b/g);
+        for (const match of cloudMatches) {
+            const height = parseInt(match[2], 10);
+            if (height < 10) return { label: "IMC", color: [220, 53, 69] }; 
+        }
+
+        return { label: "VMC", color: [0, 128, 0] }; 
+    }
+
+    async function fetchAndRenderMetarTaf(icaos, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        for (const icao of icaos) {
+            const wrapperId = `mt-wrap-${icao}-${Date.now()}`;
+            const wrapper = document.createElement('div');
+            wrapper.id = wrapperId;
+            wrapper.className = 'metar-item-wrap';
+            wrapper.innerHTML = `<div class="loading">Loading ${icao}...</div>`;
+            container.appendChild(wrapper);
+
+            const metarUrl = `https://weather-api-proxy.bbfn2187.workers.dev/?icao=${icao}&type=metar`;
+            const tafUrl   = `https://weather-api-proxy.bbfn2187.workers.dev/?icao=${icao}&type=taf`;
+            
+            try {
+                const [metarData, tafData] = await Promise.all([safeFetchJson(metarUrl), safeFetchJson(tafUrl)]);
+
+                let hasMetar = !metarData.error && metarData.raw;
+                let hasTaf = !tafData.error && tafData.raw;
+
+                let flightCatHtml = '';
+                if (hasMetar) {
+                    const result = judgeFlightCategory(metarData.raw);
+                    if (result) {
+                        const colorStr = `rgb(${result.color.join(',')})`;
+                        flightCatHtml = `<span style="color: ${colorStr}; margin-left: 15px; font-size: 0.85em; font-weight: bold;">[${result.label}]</span>`;
+                    }
+                }
+
+                document.getElementById(wrapperId).innerHTML = `
+                    <div style="font-size: 16px; font-weight: bold; color: #333; margin-bottom: 10px; border-bottom: 2px solid #0078D4; display: inline-block; padding-bottom: 3px;">
+                        ${icao}${flightCatHtml}
+                    </div>
+                    <div class="data-section">
+                        <div class="data-label">METAR ${hasMetar ? convertToJST(metarData.raw) : ''}</div>
+                        <div class="raw-text">${hasMetar ? metarData.raw : '<span class="msg-none">現在有効なMETARがありません</span>'}</div>
+                    </div>
+                    <div class="data-section">
+                        <div class="data-label">TAF ${hasTaf ? convertToJST(tafData.raw) : ''}</div>
+                        <div class="raw-text">${hasTaf ? formatTaf(tafData.raw) : '<span class="msg-none">該当空港のTAFは発行されていません。</span>'}</div>
+                    </div>
+                `;
+            } catch(e) {
+                document.getElementById(wrapperId).innerHTML = `<div class="error-msg">データの取得に失敗しました (${icao})</div>`;
+            }
+        }
+    }
+
+    function addExtraMetarTaf() {
+        const inputEl = document.getElementById('extra-icao');
+        const val = inputEl.value.toUpperCase();
+        const icaos = val.split(/[\s,]+/).filter(Boolean);
+        if (icaos.length > 0) {
+            fetchAndRenderMetarTaf(icaos, 'metar-taf-content');
+            inputEl.value = '';
+        }
+    }
+
+    // --- PDF生成関連の関数 (既存のまま変更なし) ---
     function addTextToImage(blob, text) {
         return new Promise((resolve, reject) => {
             const img = new Image();
