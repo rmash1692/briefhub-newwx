@@ -38,7 +38,7 @@
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.5);
-            display: none; /* 初期状態は非表示 */
+            display: none; 
             justify-content: center;
             align-items: center;
             z-index: 9999;
@@ -77,6 +77,9 @@
             padding-bottom: 10px; display: flex; justify-content: space-between;
         }
         .chart-img { width: 100%; height: auto; display: block; border-radius: 2px; }
+        
+        /* PDFプレビュー用のスタイル */
+        .chart-pdf { width: 100%; height: 750px; border: none; display: block; border-radius: 2px; }
 
         .loading { text-align: center; color: #0078D4; font-weight: bold; padding: 20px; }
         .error-msg { color: #d9534f; background: #fdf7f7; padding: 10px; border-radius: 4px; margin-bottom: 10px; text-align: center; }
@@ -134,104 +137,108 @@
         { title: "国内悪天予想図", file: "FBJP_Latest.png" },
     ];
 
-const airportConfig = {
+    const airportConfig = {
         // --- 北海道 ---
-        "RJCW": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
-        "RJER": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
-        "RJEB": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
-        "RJCM": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
-        "RJCN": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
-        "RJEC": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
-        "RJCK": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
-        "RJCB": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
-        "RJCT": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
-        "RJCO": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
-        "RJCC": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
-        "RJCY": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
-        "RJEO": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
-        "RJCH": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
+        "RJCW": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [], pdfs: [] },
+        "RJER": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [], pdfs: [] },
+        "RJEB": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [], pdfs: [] },
+        "RJCM": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [], pdfs: [] },
+        "RJCN": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [], pdfs: [] },
+        "RJEC": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [], pdfs: [] },
+        "RJCK": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [], pdfs: [] },
+        "RJCB": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [], pdfs: [] },
+        "RJCT": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [], pdfs: [] },
+        "RJCO": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [], pdfs: [] },
+        "RJCC": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [], pdfs: [] },
+        "RJCY": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [], pdfs: [] },
+        "RJEO": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [], pdfs: [] },
+        "RJCH": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [], pdfs: [] },
 
         // --- 東北 ---
-        "RJSO": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
-        "RJSA": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
-        "RJSM": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
-        "RJSR": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
-        "RJSK": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
-        "RJSI": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
-        "RJSY": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
-        "RJSC": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
-        "RJST": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
-        "RJSS": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
-        "RJSF": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
+        "RJSO": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [], pdfs: [] },
+        "RJSA": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [], pdfs: [] },
+        "RJSM": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [], pdfs: [] },
+        "RJSR": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [], pdfs: [] },
+        "RJSK": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [], pdfs: [] },
+        "RJSI": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [], pdfs: [] },
+        "RJSY": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [], pdfs: [] },
+        "RJSC": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [], pdfs: [] },
+        "RJST": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [], pdfs: [] },
+        "RJSS": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [], pdfs: [] },
+        "RJSF": { 
+            fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], 
+            ash: [], 
+            pdfs: ["kaisetsu_tanki_latest.pdf"]  // 福島空港のみPDFリソースを定義
+        },
 
         // --- 東日本 ---
-        "RJSD": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
-        "RJSN": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
-        "RJAH": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
-        "RJAA": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
-        "RJAK": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
-        "RJTT": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
-        "RJTF": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
-        "RJNN": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
-        "RJNT": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
-        "RJAF": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
-        "RJNK": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
-        "RJNF": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
-        "RJNA": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
-        "RJGG": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
-        "RJNS": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
-        "RJTO": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
-        "RJAN": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
-        "RJAZ": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
-        "RJTQ": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
-        "RJTH": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
+        "RJSD": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [], pdfs: [] },
+        "RJSN": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [], pdfs: [] },
+        "RJAH": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [], pdfs: [] },
+        "RJAA": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [], pdfs: [] },
+        "RJAK": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [], pdfs: [] },
+        "RJTT": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [], pdfs: [] },
+        "RJTF": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [], pdfs: [] },
+        "RJNN": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [], pdfs: [] },
+        "RJNT": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [], pdfs: [] },
+        "RJAF": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [], pdfs: [] },
+        "RJNK": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [], pdfs: [] },
+        "RJNF": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [], pdfs: [] },
+        "RJNA": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [], pdfs: [] },
+        "RJGG": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [], pdfs: [] },
+        "RJNS": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [], pdfs: [] },
+        "RJTO": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [], pdfs: [] },
+        "RJAN": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [], pdfs: [] },
+        "RJAZ": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [], pdfs: [] },
+        "RJTQ": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [], pdfs: [] },
+        "RJTH": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [], pdfs: [] },
 
         // --- 西日本 ---
-        "RJNO": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
-        "RJOC": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
-        "RJOK": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
-        "RJBT": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
-        "RJOY": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
-        "RJOB": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
-        "RJOA": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
-        "RJBD": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
-        "RJOR": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
-        "RJOM": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
-        "RJFO": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
-        "RJFR": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
-        "RJFF": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
-        "RJFS": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
-        "RJFT": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
-        "RJFM": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: ["Ashfall_Kirishimayama_Latest.png"] },
-        "RJFU": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
-        "RJFK": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: ["Ashfall_Sakurajima_Latest.png", "Ashfall_Kirishimayama_Latest.png"] },
-        "RJFE": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
-        "RJDT": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
+        "RJNO": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [], pdfs: [] },
+        "RJOC": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [], pdfs: [] },
+        "RJOK": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [], pdfs: [] },
+        "RJBT": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [], pdfs: [] },
+        "RJOY": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [], pdfs: [] },
+        "RJOB": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [], pdfs: [] },
+        "RJOA": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [], pdfs: [] },
+        "RJBD": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [], pdfs: [] },
+        "RJOR": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [], pdfs: [] },
+        "RJOM": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [], pdfs: [] },
+        "RJFO": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [], pdfs: [] },
+        "RJFR": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [], pdfs: [] },
+        "RJFF": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [], pdfs: [] },
+        "RJFS": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [], pdfs: [] },
+        "RJFT": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [], pdfs: [] },
+        "RJFM": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: ["Ashfall_Kirishimayama_Latest.png"], pdfs: [] },
+        "RJFU": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [], pdfs: [] },
+        "RJFK": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: ["Ashfall_Sakurajima_Latest.png", "Ashfall_Kirishimayama_Latest.png"], pdfs: [] },
+        "RJFE": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [], pdfs: [] },
+        "RJDT": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [], pdfs: [] },
 
         // --- 奄美 ---
-        "RJFG": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
-        "RJFC": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
-        "RJKA": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
-        "RJKI": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
-        "RJKN": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
-        "RJKB": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
-        "RORY": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
-        "RORK": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
-        "ROMD": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
+        "RJFG": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [], pdfs: [] },
+        "RJFC": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [], pdfs: [] },
+        "RJKA": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [], pdfs: [] },
+        "RJKI": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [], pdfs: [] },
+        "RJKN": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [], pdfs: [] },
+        "RJKB": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [], pdfs: [] },
+        "RORY": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [], pdfs: [] },
+        "RORK": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [], pdfs: [] },
+        "ROMD": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [], pdfs: [] },
 
         // --- 沖縄 ---
-        "RORE": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
-        "RORA": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
-        "ROKJ": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
-        "RODN": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
-        "ROAH": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
-        "ROKR": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
-        "RORS": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
-        "ROMY": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
-        "RORT": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
-        "ROIG": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
-        "RORH": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
-        "ROYN": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] }
+        "RORE": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [], pdfs: [] },
+        "RORA": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [], pdfs: [] },
+        "ROKJ": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [], pdfs: [] },
+        "RODN": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [], pdfs: [] },
+        "ROAH": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [], pdfs: [] },
+        "ROKR": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [], pdfs: [] },
+        "RORS": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [], pdfs: [] },
+        "ROMY": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [], pdfs: [] },
+        "RORT": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [], pdfs: [] },
+        "ROIG": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [], pdfs: [] },
+        "RORH": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [], pdfs: [] },
+        "ROYN": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [], pdfs: [] }
     };
 
     let currentImages = [];
@@ -247,7 +254,9 @@ const airportConfig = {
         genBtn.disabled = true;
         currentImages = [];
 
-        const config = airportConfig[icao] || { fbos: [], ash: [] };
+        // フォールバック（未定義エラー回避）を含めて設定をロード
+        const config = airportConfig[icao] || { fbos: [], ash: [], pdfs: [] };
+        
         const targetList = [
             ...commonCharts.map(c => ({ title: c.title, url: `images/${c.file}` })),
             ...config.fbos.map(f => {
@@ -257,6 +266,10 @@ const airportConfig = {
                 return { title: fbosTitle, url: `images/${f}` };
             }),
             ...config.ash.map(a => ({ title: "降灰予想図", url: `images/${a}` })),
+            
+            // データ構造から動的にPDFを読み込んでターゲットリストに追加
+            ...(config.pdfs || []).map(p => ({ title: "短期解説資料", url: `images/${p}`, isPdf: true })),
+
             { title: "飛行場時系列予報 Part1", url: `${WORKER_URL}/?icao=${icao}&type=QMCD98` },
             { title: "飛行場時系列予報 Part2", url: `${WORKER_URL}/?icao=${icao}&type=QMCJ98` }
         ];
@@ -270,22 +283,35 @@ const airportConfig = {
 
                 const blob = await res.blob();
                 const objUrl = URL.createObjectURL(blob);
-                currentImages.push({ title: item.title, blob: blob });
+                
+                // PDFは画像一括ダウンロード処理の対象から除外する
+                if (!item.isPdf) {
+                    currentImages.push({ title: item.title, blob: blob });
+                }
 
                 const card = document.createElement('div');
                 card.className = 'card';
-                card.innerHTML = `
-                    <h3>${item.title} <span style="font-size:12px; color:#999;">${icao}</span></h3>
-                    <img src="${objUrl}" class="chart-img" alt="${item.title}">
-                `;
+                
+                // データの種類（画像かPDFか）に応じてHTMLタグを分岐切り替え
+                if (item.isPdf) {
+                    card.innerHTML = `
+                        <h3>${item.title} <span style="font-size:12px; color:#999;">${icao}</span></h3>
+                        <iframe src="${objUrl}" class="chart-pdf" type="application/pdf"></iframe>
+                    `;
+                } else {
+                    card.innerHTML = `
+                        <h3>${item.title} <span style="font-size:12px; color:#999;">${icao}</span></h3>
+                        <img src="${objUrl}" class="chart-img" alt="${item.title}">
+                    `;
+                }
                 resultDiv.appendChild(card);
             } catch (e) {
                 console.error("Load failed:", item.url);
             }
         }
 
-        if (currentImages.length === 0) {
-            resultDiv.innerHTML = '<div class="error-msg">有効な画像が見つかりませんでした。</div>';
+        if (currentImages.length === 0 && resultDiv.children.length === 0) {
+            resultDiv.innerHTML = '<div class="error-msg">有効なデータが見つかりませんでした。</div>';
         }
         genBtn.disabled = false;
     }
@@ -296,11 +322,8 @@ const airportConfig = {
         }
 
         const overlay = document.getElementById('pdf-overlay');
-        
-        // 1. ポップアップを表示
         overlay.style.display = 'flex';
 
-        // 2. 画面にポップアップが描画される時間を確保するため、少しだけ待機
         await new Promise(resolve => setTimeout(resolve, 50));
 
         try {
@@ -348,7 +371,6 @@ const airportConfig = {
             console.error(error);
             alert("PDF生成中にエラーが発生しました。");
         } finally {
-            // 3. 処理が完了した（またはエラーになった）段階でポップアップを非表示に戻す
             overlay.style.display = 'none';
         }
     }
