@@ -353,19 +353,19 @@
 
                     // 該当する画像（可視・赤外）の時だけ右下にテキストを焼き付ける
                     if (labelText) {
-                        const fontSize = 14;
+                        const fontSize = 12;
                         const textWidth = font.widthOfTextAtSize(labelText, fontSize);
                         const textHeight = fontSize;
                         
                         // パディングと配置座標の計算（画像の右下基準）
-                        const paddingX = 12;
+                        const paddingX = 10;
                         const paddingY = 6;
                         const rectW = textWidth + (paddingX * 2);
                         const rectH = textHeight + (paddingY * 2);
                         
                         // 画像の右下隅から少し内側に配置
-                        const rectX = imgX + drawW - rectW - 10;
-                        const rectY = imgY + 10; 
+                        const rectX = imgX + drawW - rectW - 8;
+                        const rectY = imgY + 12; 
 
                         // 1. 文字の後ろに黒い半透明の背景（座布団）を描画して視認性を確保
                         page.drawRectangle({
