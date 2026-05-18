@@ -108,35 +108,58 @@ def download_kaisetsu_tanki_pdf():
         print(f"短期解説資料ダウンロードエラー: {e}")
     return None
 
-# ★追加: ひまわり衛星画像(可視/赤外)の探索・ダウンロード
 def download_himawari_msc_image(img_type):
     """
     img_type: "b03"(可視) または "b13"(赤外)
-    配信遅延を考慮し、直近の10分刻みから最大3回(30分前まで)遡ってリトライします。
+    URL先行による「1日前の古い画像への自動フォールバック」を防ぐため、
+    Last-Modified ヘッダーを検証して、確実に最新の画像のみを取得します。
     """
     now_utc = datetime.now(UTC)
-    # 最新の配信ラグを考慮し、20分前の安全な時間からスタート
-    base_time = now_utc - timedelta(minutes=20)
+    # URL先行を避けるため、安全をみて30分前の時間軸からスタート
+    base_time = now_utc - timedelta(minutes=30)
     
+    local_filename = f"himawari_{img_type}_temp.png"
+    
+    # 直近3つの時間枠（10分刻みで30分前〜50分前まで）を探索
     for i in range(3):
         target_time = base_time - timedelta(minutes=10 * i)
-        # 10分刻みの「分」に切り捨て
         minute = (target_time.minute // 10) * 10
         target_time = target_time.replace(minute=minute, second=0, microsecond=0)
         
         hhmm = target_time.strftime("%H%M")
         url = f"https://www.data.jma.go.jp/mscweb/data/himawari/img/jpn/jpn_{img_type}_{hhmm}.jpg"
-        local_filename = f"himawari_{img_type}_temp.png"
         
-        print(f"ひまわり画像チェック ({img_type}): UTC {hhmm} 探索中...")
-        r = requests.get(url, timeout=15)
-        if r.status_code == 200:
-            with open(local_filename, "wb") as f:
-                f.write(r.content)
-            print(f"➔ ひまわり画像取得成功: UTC {hhmm}")
-            return local_filename
+        print(f"ひまわり画像検証 ({img_type}): UTC {hhmm} チェック中...")
+        
+        try:
+            # 1. まずHEADリクエストでサーバー上の実際の更新時間を調べる
+            head_req = requests.head(url, timeout=10)
+            if head_req.status_code == 200:
+                last_modified_str = head_req.headers.get('Last-Modified')
+                if last_modified_str:
+                    file_modified_dt = parsedate_to_datetime(last_modified_str)
+                    
+                    # 実際のファイルの更新時間と、いま狙っているUTC時刻の差分を計算
+                    # (同じ時間の画像であれば、差分は数十分以内に収まるはずです)
+                    time_diff = abs(target_time.replace(tzinfo=UTC) - file_modified_dt)
+                    
+                    # 差計が2時間以上ある場合は、サーバーが返してきた「1日前の古い画像」と判定してスキップ
+                    if time_diff > timedelta(hours=2):
+                        print(f"  ⚠️ URL未配信のためサーバーが古い画像を返しました (差分: {time_diff})。スキップします。")
+                        continue
+                    
+                    # 2. 検証をクリアしたら本ダウンロード
+                    r = requests.get(url, timeout=15)
+                    if r.status_code == 200:
+                        with open(local_filename, "wb") as f:
+                            f.write(r.content)
+                        print(f"➔ ひまわり画像取得成功: UTC {hhmm} (実際の更新: {file_modified_dt.strftime('%H:%M')} UTC)")
+                        return local_filename
+        except Exception as e:
+            print(f"  エラー発生: {e}")
+            continue
             
-    print(f"❌ ひまわり画像 ({img_type}) の取得に失敗しました。")
+    print(f"❌ ひまわり画像 ({img_type}) の有効な最新画像が見つかりませんでした。")
     return None
 
 # -----------------------------------
