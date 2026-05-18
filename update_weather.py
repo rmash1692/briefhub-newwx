@@ -112,8 +112,10 @@ def download_himawari_msc_image(img_type):
     now_utc = datetime.now(UTC)
     local_filename = f"himawari_{img_type}_temp.png"
 
-    for i in range(5):
-        target_time = now_utc - timedelta(minutes=10 * i)
+    base_time = now_utc - timedelta(minutes=10)
+
+    for i in range(3):
+        target_time = base_time - timedelta(minutes=10 * i)
         minute = (target_time.minute // 10) * 10
         target_time = target_time.replace(minute=minute, second=0, microsecond=0)
         
@@ -127,16 +129,16 @@ def download_himawari_msc_image(img_type):
                 if last_modified_str:
                     file_modified_dt = parsedate_to_datetime(last_modified_str)
 
-                    time_diff = abs(target_time.replace(tzinfo=UTC) - file_modified_dt)
+                    time_diff_now = abs(now_utc - file_modified_dt)
                     
-                    if time_diff > timedelta(hours=2):
+                    if time_diff_now > timedelta(hours=2):
                         continue
-                    
+
                     r = requests.get(url, timeout=15)
                     if r.status_code == 200:
                         with open(local_filename, "wb") as f:
                             f.write(r.content)
-                        print(f"➔ ひまわり最新画像取得成功 ({img_type}): 表示上のURL_UTC: {hhmm} (実際のファイル更新: {file_modified_dt.strftime('%H:%M')} UTC)")
+                        print(f"➔ ひまわり最新画像取得成功 ({img_type}): URL表記: UTC {hhmm} (実際のファイル更新: {file_modified_dt.strftime('%H:%M')} UTC)")
                         return local_filename
         except Exception as e:
             print(f"  検証中にエラーが発生しました: {e}")
