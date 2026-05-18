@@ -80,7 +80,7 @@
             <div class="spinner"></div>
             Preparing Download...<br>
             <span style="font-size: 14px; color: #666; font-weight: normal;">PDFを生成しています</span>
-        </div>
+        }</div>
     </div>
 
     <h2>WX Briefing</h2>
@@ -91,13 +91,11 @@
         <button id="pdf-btn" onclick="downloadAllAsPDF()" class="btn-pdf">Download PDF</button>
     </div>
 
-    <div id="result">
-    </div>
+    <div id="result"></div>
 
 <script>
     const WORKER_URL = "https://taf-proxy.bbfn2187.workers.dev";
 
-    // ページ読み込み時に保存されたICAOコードを復元
     window.onload = () => {
         const savedIcao = localStorage.getItem('briefing_icao');
         if (savedIcao) {
@@ -105,7 +103,6 @@
         }
     };
 
-    // 入力されるたびにlocalStorageへ保存
     function saveToLocal() {
         const icao = document.getElementById('icao').value.toUpperCase();
         localStorage.setItem('briefing_icao', icao);
@@ -127,7 +124,6 @@
     ];
 
     const airportConfig = {
-        // --- 北海道 ---
         "RJCW": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
         "RJER": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
         "RJEB": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
@@ -142,8 +138,7 @@
         "RJCY": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
         "RJEO": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
         "RJCH": { fbos: ["FBOS06_Hokkaido_Latest.png", "FBOS39_Hokkaido_Latest.png"], ash: [] },
-
-        // --- 東北 ---
+        
         "RJSO": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
         "RJSA": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
         "RJSM": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
@@ -155,8 +150,7 @@
         "RJST": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
         "RJSS": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [] },
         "RJSF": { fbos: ["FBOS06_Tohoku_Latest.png", "FBOS39_Tohoku_Latest.png"], ash: [], kaisetsu: ["kaisetsu_tanki_latest.png"] },
-
-        // --- 東日本 ---
+        
         "RJSD": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
         "RJSN": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
         "RJAH": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
@@ -177,8 +171,7 @@
         "RJAZ": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
         "RJTQ": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
         "RJTH": { fbos: ["FBOS06_East_Latest.png", "FBOS39_East_Latest.png"], ash: [] },
-
-        // --- 西日本 ---
+        
         "RJNO": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
         "RJOC": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
         "RJOK": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
@@ -199,8 +192,7 @@
         "RJFK": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: ["Ashfall_Sakurajima_Latest.png", "Ashfall_Kirishimayama_Latest.png"] },
         "RJFE": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
         "RJDT": { fbos: ["FBOS06_West_Latest.png", "FBOS39_West_Latest.png"], ash: [] },
-
-        // --- 奄美 ---
+        
         "RJFG": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
         "RJFC": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
         "RJKA": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
@@ -210,8 +202,7 @@
         "RORY": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
         "RORK": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
         "ROMD": { fbos: ["FBOS06_Amami_Latest.png", "FBOS39_Amami_Latest.png"], ash: [] },
-
-        // --- 沖縄 ---
+        
         "RORE": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
         "RORA": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
         "ROKJ": { fbos: ["FBOS06_Okinawa_Latest.png", "FBOS39_Okinawa_Latest.png"], ash: [] },
@@ -284,30 +275,83 @@
         genBtn.disabled = false;
     }
 
-   async function downloadAllAsPDF() {
+    // 日本語テキストを乗せた新しいPNGのArrayBufferを生成するヘルパー関数
+    function addTextToImage(blob, text) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.src = URL.createObjectURL(blob);
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                
+                // 元画像を描画
+                ctx.drawImage(img, 0, 0);
+                
+                // テキストの描画設定（フォントサイズは画像幅に応じて適宜スケール）
+                const fontSize = Math.max(16, Math.round(img.width * 0.025));
+                ctx.font = `bold ${fontSize}px sans-serif`;
+                
+                const paddingX = fontSize * 0.8;
+                const paddingY = fontSize * 0.5;
+                const textWidth = ctx.measureText(text).width;
+                const rectW = textWidth + paddingX * 2;
+                const rectH = fontSize + paddingY * 2;
+                
+                // 右下隅の座標を計算
+                const rectX = img.width - rectW - fontSize * 0.5;
+                const rectY = img.height - rectH - fontSize * 0.5;
+                
+                // 半透明の背景（座布団）を描画
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.fillRect(rectX, rectY, rectW, rectH);
+                
+                // 白い文字を描画
+                ctx.fillStyle = '#ffffff';
+                ctx.textBaseline = 'top';
+                ctx.fillText(text, rectX + paddingX, rectY + paddingY);
+                
+                // CanvasからBlobを経てArrayBufferを取得
+                canvas.toBlob((newBlob) => {
+                    newBlob.arrayBuffer().then(resolve).catch(reject);
+                }, 'image/png');
+            };
+            img.onerror = reject;
+        });
+    }
+
+    async function downloadAllAsPDF() {
         if (currentImages.length === 0) {
             return alert("先に「Generate View」を実行して画像を取得してください。");
         }
 
         const overlay = document.getElementById('pdf-overlay');
-
-        // 1. ポップアップを表示
         overlay.style.display = 'flex';
 
-        // 2. 画面にポップアップが描画される時間を確保するため、少しだけ待機
+        // 画面の再描画を待つ
         await new Promise(resolve => setTimeout(resolve, 50));
 
         try {
             const icao = document.getElementById('icao').value.toUpperCase();
-            const { PDFDocument, rgb, StandardFonts } = PDFLib; // rgb と StandardFonts を追加
+            const { PDFDocument } = PDFLib; 
             const pdfDoc = await PDFDocument.create();
             
-            // 英字の標準フォント（Helvetica-Bold）を読み込み
-            const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-
             for (const item of currentImages) {
                 try {
-                    const imgBytes = await item.blob.arrayBuffer();
+                    let imgBytes;
+                    let labelText = "";
+                    
+                    if (item.title.includes("可視")) labelText = "可視画像";
+                    if (item.title.includes("赤外")) labelText = "赤外画像";
+
+                    // 日本語表示が必要な場合は、Canvasで画像を合成して上書きする
+                    if (labelText) {
+                        imgBytes = await addTextToImage(item.blob, labelText);
+                    } else {
+                        imgBytes = await item.blob.arrayBuffer();
+                    }
+
                     const uint8Array = new Uint8Array(imgBytes);
                     
                     let img;
@@ -335,54 +379,12 @@
                     const imgX = (pageWidth - drawW) / 2;
                     const imgY = (pageHeight - drawH) / 2;
 
-                    // 画像の描画
                     page.drawImage(img, {
                         x: imgX,
                         y: imgY,
                         width: drawW,
                         height: drawH
                     });
-
-                    let labelText = "";
-                    if (item.title.includes("可視")) {
-                        labelText = "可視画像";
-                    } else if (item.title.includes("赤外")) {
-                        labelText = "赤外画像";
-                    }
-
-                    if (labelText) {
-                        const fontSize = 12;
-                        const textWidth = font.widthOfTextAtSize(labelText, fontSize);
-                        const textHeight = fontSize;
-                        
-                        const paddingX = 10;
-                        const paddingY = 6;
-                        const rectW = textWidth + (paddingX * 2);
-                        const rectH = textHeight + (paddingY * 2);
-                        
-                        // 画像の右下隅から少し内側に配置
-                        const rectX = imgX + drawW - rectW - 8;
-                        const rectY = imgY + 12; 
-
-                        // 1. 文字の後ろに黒い半透明の背景（座布団）を描画して視認性を確保
-                        page.drawRectangle({
-                            x: rectX,
-                            y: rectY,
-                            width: rectW,
-                            height: rectH,
-                            color: rgb(0, 0, 0),
-                            opacity: 0.6,
-                        });
-
-                        // 2. 背景の上に白い文字を描画
-                        page.drawText(labelText, {
-                            x: rectX + paddingX,
-                            y: rectY + paddingY + 2,
-                            size: fontSize,
-                            font: font,
-                            color: rgb(1, 1, 1), // 白
-                        });
-                    }
 
                 } catch (e) { 
                     console.warn(`PDF Embed Error at [${item.title}]:`, e); 
