@@ -319,7 +319,7 @@
                     const maxW = pageWidth - margin * 2;
                     const maxH = pageHeight - margin * 2;
 
-                    const ratio = Math.min(maxW / width, maxW / height); // 縦横比維持
+                    const ratio = Math.min(maxW / width, maxH / height); // 縦横比維持
                     const drawW = width * ratio;
                     const drawH = height * ratio;
 
