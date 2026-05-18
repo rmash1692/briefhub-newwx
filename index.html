@@ -335,9 +335,9 @@
             const pdfBytes = await pdfDoc.save();
             const blob = new Blob([pdfBytes], { type: 'application/pdf' });
             const link = document.createElement('a');
-            const link.href = URL.createObjectURL(blob);
-            const link.download = `BriefHub_WX_${icao}.pdf`;
-            const link.click();
+            link.href = URL.createObjectURL(blob);
+            link.download = `BriefHub_WX_${icao}.pdf`;
+            link.click();
 
         } catch (error) {
             console.error(error);
