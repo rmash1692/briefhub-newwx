@@ -44,17 +44,11 @@ def download_fsas_pdf():
     return None
 
 def download_jma_nwpmap_pdf(chart_type, target_time):
-    # ターゲット時刻（UTC）から "00" または "12" を取得
     hh = target_time.strftime("%H")
-    
-    # 常に _00.pdf または _12.pdf となる固定URL
     url = f"https://www.jma.go.jp/bosai/numericmap/data/nwpmap/{chart_type}_{hh}.pdf"
-    
-    # ローカル保存時は上書きを防ぐため日付・時刻を付与
     filename = f"{chart_type.upper()}_{target_time.strftime('%Y%m%d%H%M')}.pdf"
     
     try:
-        # キャッシュを回避して最新のヘッダー情報を取得
         headers = {'Cache-Control': 'no-cache', 'Pragma': 'no-cache'}
         head_req = requests.head(url, headers=headers, timeout=10)
         
@@ -62,17 +56,11 @@ def download_jma_nwpmap_pdf(chart_type, target_time):
             last_modified_str = head_req.headers.get('Last-Modified')
             if last_modified_str:
                 last_modified_dt = parsedate_to_datetime(last_modified_str)
-                
-                # 【重要】固定URL対策
-                # ファイルの最終更新日時が、目標時刻(target_time)よりも古い場合、
-                # サーバー上のファイルはまだ「前日の00/12UTCのもの」であるためスキップする
                 if last_modified_dt < target_time:
                     return None
     except Exception as e:
-        # HEADリクエストが弾かれた等の場合は、安全のため後続のGETを試行する
         pass
 
-    # 本ダウンロード
     headers = {'Cache-Control': 'no-cache', 'Pragma': 'no-cache'}
     r = requests.get(url, headers=headers, timeout=20)
     if r.status_code == 200:
@@ -106,18 +94,16 @@ def download_jma_ashfall_pdf(chart_id, target_time_jst):
         return filename
     return None
 
-# ★新規追加: 短期解説資料PDFダウンロード関数
+# ★修正: 短期解説資料を共通の一時保存スタイルに変更
 def download_kaisetsu_tanki_pdf():
     url = "https://www.data.jma.go.jp/yoho/data/jishin/kaisetsu_tanki_latest.pdf"
     filename = "kaisetsu_tanki_latest.pdf"
-    dest_path = os.path.join(dest_folder_path, filename)
     try:
         r = requests.get(url, timeout=20)
         if r.status_code == 200:
-            with open(dest_path, "wb") as f:
+            with open(filename, "wb") as f:
                 f.write(r.content)
-            print(f"保存完了: {dest_path}")
-            return dest_path
+            return filename
     except Exception as e:
         print(f"短期解説資料ダウンロードエラー: {e}")
     return None
@@ -214,39 +200,33 @@ def download_fxjp106_checked():
     return None
 
 # -----------------------------------
-# 4. ★新設: 画像化＆合成＆保存関数
+# 4. 画像化＆合成＆保存関数
 # -----------------------------------
 def pdf_to_png_and_upload(pdf_file, final_drive_name, overlay_image_name=None):
     if not pdf_file or not os.path.exists(pdf_file):
         return False
 
-    # 1. まずPDFを画像(PNG)に変換する (解像度を確保)
     png_filename_local = pdf_file.replace(".pdf", ".png")
     pages = convert_from_path(pdf_file, dpi=200)
     
-    # アルファチャンネル(透明度)を持たせたRGBA形式でベース画像を用意
+    # ※短期解説資料など複数ページあるPDFの場合、1ページ目を代表として画像化します
     base_img = pages[0].convert("RGBA")
 
-    # 2. レイヤーの指定があれば合成処理を実行
     if overlay_image_name:
         overlay_png_path = os.path.join(layer_folder_path, overlay_image_name)
         if os.path.exists(overlay_png_path):
             print(f"PIL画像合成: {pdf_file} に {overlay_image_name} を重ねます")
             try:
                 overlay_img = Image.open(overlay_png_path).convert("RGBA")
-                # 天気図の画像サイズに合わせてレイヤー画像をリサイズ（ズレ防止）
                 overlay_img = overlay_img.resize(base_img.size, Image.Resampling.LANCZOS)
-                # ベース画像の上に透過レイヤー画像を重ね合わせる
                 base_img = Image.alpha_composite(base_img, overlay_img)
             except Exception as e:
                 print(f"合成エラー: {e}")
         else:
             print(f"警告: レイヤー画像が見つかりません -> {overlay_png_path}")
 
-    # 3. 最終画像をRGBに戻して保存
     base_img.convert("RGB").save(png_filename_local, "PNG")
 
-    # 4. 所定のディレクトリに配置
     dest_path = os.path.join(dest_folder_path, final_drive_name)
     shutil.copy(png_filename_local, dest_path)
     print(f"保存完了: {dest_path}")
@@ -278,7 +258,7 @@ if fsas_pdf_local:
     pdf_to_png_and_upload(fsas_pdf_local, "FSAS_Latest.png")
     if os.path.exists(fsas_pdf_local): os.remove(fsas_pdf_local)
 
-# --- AUPQ / FXFE / FXJP (★画像合成対象) ---
+# --- AUPQ / FXFE / FXJP (画像合成対象) ---
 charts_to_process = [
     ('aupq35', 'japan_overlay_aupq.png', 'AUPQ35_Latest.png'),
     ('aupq78', 'japan_overlay_aupq.png', 'AUPQ78_Latest.png'),
@@ -290,7 +270,6 @@ charts_to_process = [
 for code, overlay, out_name in charts_to_process:
     raw_pdf = get_latest_jma_nwpmap_pdf(code)
     if raw_pdf:
-        # ダウンロードしたPDFとレイヤー名を渡し、関数内で一発合成する
         pdf_to_png_and_upload(raw_pdf, out_name, overlay_image_name=overlay)
         if os.path.exists(raw_pdf): os.remove(raw_pdf)
 
@@ -303,25 +282,22 @@ if fbjp_png: direct_png_upload(fbjp_png, "FBJP_Latest.png")
 
 # --- 下層悪天予想図 (06: 6時間予想 / 39: 時系列予想) ---
 sigwx_regions = {
-    "fbsp": "Hokkaido",  # 北海道
-    "fbsn": "Tohoku",    # 東北
-    "fbtk": "East",      # 東日本
-    "fbos": "West",      # 西日本
-    "fbkg": "Amami",     # 奄美
-    "fbok": "Okinawa"    # 沖縄
+    "fbsp": "Hokkaido",
+    "fbsn": "Tohoku",
+    "fbtk": "East",
+    "fbos": "West",
+    "fbkg": "Amami",
+    "fbok": "Okinawa"
 }
 
-# 取得する予報タイプ（06と39）
 forecast_types = ["06", "39"]
 
 for code, name in sigwx_regions.items():
     for f_type in forecast_types:
-        # URL例: .../low-level_sigwx/fbos06.png
         url = f"https://www.data.jma.go.jp/airinfo/data/pict/low-level_sigwx/{code}{f_type}.png"
         png = download_jma_png(url, f"temp_{code}_{f_type}")
         
         if png:
-            # HTML側で呼び出しやすいよう "FBOS_地域名_タイプ_Latest.png" で保存
             final_name = f"FBOS{f_type}_{name}_Latest.png"
             direct_png_upload(png, final_name)
 
@@ -331,10 +307,13 @@ for name, code in ash_volcanoes:
     pdf_file = get_latest_jma_ashfall_pdf_stable(name, code)
     if pdf_file:
         pdf_to_png_and_upload(pdf_file, f"Ashfall_{name}_Latest.png")
-        os.remove(pdf_file)
+        if os.path.exists(pdf_file): os.remove(pdf_file)
 
-# ★新規追加: 短期解説資料のダウンロード実行
-download_kaisetsu_tanki_pdf()
+# ★修正: 短期解説資料のダウンロード及びPNG化・自動削除の実行
+kaisetsu_pdf_local = download_kaisetsu_tanki_pdf()
+if kaisetsu_pdf_local:
+    pdf_to_png_and_upload(kaisetsu_pdf_local, "kaisetsu_tanki_latest.png")
+    if os.path.exists(kaisetsu_pdf_local): os.remove(kaisetsu_pdf_local)
 
 
 # -----------------------------------
