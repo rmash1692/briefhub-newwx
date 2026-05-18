@@ -299,8 +299,11 @@
 
         try {
             const icao = document.getElementById('icao').value.toUpperCase();
-            const { PDFDocument } = PDFLib;
+            const { PDFDocument, rgb, StandardFonts } = PDFLib; // rgb と StandardFonts を追加
             const pdfDoc = await PDFDocument.create();
+            
+            // 英字の標準フォント（Helvetica-Bold）を読み込み
+            const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
             for (const item of currentImages) {
                 try {
@@ -308,12 +311,9 @@
                     const uint8Array = new Uint8Array(imgBytes);
                     
                     let img;
-                    // ★ 修正ポイント: バイナリデータの先頭（マジックナンバー）でJPGかPNGかを自動判別
                     if (uint8Array[0] === 0xFF && uint8Array[1] === 0xD8) {
-                        // JPEG形式として埋め込み
                         img = await pdfDoc.embedJpg(imgBytes);
                     } else {
-                        // PNG形式として埋め込み (デフォルト)
                         img = await pdfDoc.embedPng(imgBytes);
                     }
 
@@ -328,16 +328,65 @@
                     const maxW = pageWidth - margin * 2;
                     const maxH = pageHeight - margin * 2;
 
-                    const ratio = Math.min(maxW / width, maxH / height); // 縦横比維持
+                    const ratio = Math.min(maxW / width, maxH / height);
                     const drawW = width * ratio;
                     const drawH = height * ratio;
 
+                    const imgX = (pageWidth - drawW) / 2;
+                    const imgY = (pageHeight - drawH) / 2;
+
+                    // 画像の描画
                     page.drawImage(img, {
-                        x: (pageWidth - drawW) / 2,
-                        y: (pageHeight - drawH) / 2,
+                        x: imgX,
+                        y: imgY,
                         width: drawW,
                         height: drawH
                     });
+
+                    // ★ 追加ロジック: タイトルから英語のラベルを判定
+                    let labelText = "";
+                    if (item.title.includes("可視")) {
+                        labelText = "HIMAWARI - VISIBLE";
+                    } else if (item.title.includes("赤外")) {
+                        labelText = "HIMAWARI - INFRARED";
+                    }
+
+                    // 該当する画像（可視・赤外）の時だけ右下にテキストを焼き付ける
+                    if (labelText) {
+                        const fontSize = 14;
+                        const textWidth = font.widthOfTextAtSize(labelText, fontSize);
+                        const textHeight = fontSize;
+                        
+                        // パディングと配置座標の計算（画像の右下基準）
+                        const paddingX = 10;
+                        const paddingY = 6;
+                        const rectW = textWidth + (paddingX * 2);
+                        const rectH = textHeight + (paddingY * 2);
+                        
+                        // 画像の右下隅から少し内側に配置
+                        const rectX = imgX + drawW - rectW - 10;
+                        const rectY = imgY + 10; 
+
+                        // 1. 文字の後ろに黒い半透明の背景（座布団）を描画して視認性を確保
+                        page.drawRectangle({
+                            x: rectX,
+                            y: rectY,
+                            width: rectW,
+                            height: rectH,
+                            color: rgb(0, 0, 0),
+                            opacity: 0.6, // 60%の不透明度
+                        });
+
+                        // 2. 背景の上に白い文字を描画
+                        page.drawText(labelText, {
+                            x: rectX + paddingX,
+                            y: rectY + paddingY + 2, // 微調整
+                            size: fontSize,
+                            font: font,
+                            color: rgb(1, 1, 1), // 白
+                        });
+                    }
+
                 } catch (e) { 
                     console.warn(`PDF Embed Error at [${item.title}]:`, e); 
                 }
@@ -354,7 +403,6 @@
             console.error(error);
             alert("PDF生成中にエラーが発生しました。");
         } finally {
-            // 3. 処理が完了した（またはエラーになった）段階でポップアップを非表示に戻す
             overlay.style.display = 'none';
         }
     }
