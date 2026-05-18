@@ -94,7 +94,7 @@ def download_jma_ashfall_pdf(chart_id, target_time_jst):
         return filename
     return None
 
-# ★修正: 短期解説資料を共通の一時保存スタイルに変更
+# 短期解説資料
 def download_kaisetsu_tanki_pdf():
     url = "https://www.data.jma.go.jp/yoho/data/jishin/kaisetsu_tanki_latest.pdf"
     filename = "kaisetsu_tanki_latest.pdf"
@@ -106,6 +106,37 @@ def download_kaisetsu_tanki_pdf():
             return filename
     except Exception as e:
         print(f"短期解説資料ダウンロードエラー: {e}")
+    return None
+
+# ★追加: ひまわり衛星画像(可視/赤外)の探索・ダウンロード
+def download_himawari_msc_image(img_type):
+    """
+    img_type: "b03"(可視) または "b13"(赤外)
+    配信遅延を考慮し、直近の10分刻みから最大3回(30分前まで)遡ってリトライします。
+    """
+    now_utc = datetime.now(UTC)
+    # 最新の配信ラグを考慮し、20分前の安全な時間からスタート
+    base_time = now_utc - timedelta(minutes=20)
+    
+    for i in range(3):
+        target_time = base_time - timedelta(minutes=10 * i)
+        # 10分刻みの「分」に切り捨て
+        minute = (target_time.minute // 10) * 10
+        target_time = target_time.replace(minute=minute, second=0, microsecond=0)
+        
+        hhmm = target_time.strftime("%H%M")
+        url = f"https://www.data.jma.go.jp/mscweb/data/himawari/img/jpn/jpn_{img_type}_{hhmm}.jpg"
+        local_filename = f"himawari_{img_type}_temp.png"
+        
+        print(f"ひまわり画像チェック ({img_type}): UTC {hhmm} 探索中...")
+        r = requests.get(url, timeout=15)
+        if r.status_code == 200:
+            with open(local_filename, "wb") as f:
+                f.write(r.content)
+            print(f"➔ ひまわり画像取得成功: UTC {hhmm}")
+            return local_filename
+            
+    print(f"❌ ひまわり画像 ({img_type}) の取得に失敗しました。")
     return None
 
 # -----------------------------------
@@ -209,7 +240,6 @@ def pdf_to_png_and_upload(pdf_file, final_drive_name, overlay_image_name=None):
     png_filename_local = pdf_file.replace(".pdf", ".png")
     pages = convert_from_path(pdf_file, dpi=200)
     
-    # ※短期解説資料など複数ページあるPDFの場合、1ページ目を代表として画像化します
     base_img = pages[0].convert("RGBA")
 
     if overlay_image_name:
@@ -253,6 +283,13 @@ pdf_to_png_and_upload(prev_asas_pdf_local, "ASAS_Prior.png")
 if latest_asas_pdf_local and os.path.exists(latest_asas_pdf_local): os.remove(latest_asas_pdf_local)
 if prev_asas_pdf_local and os.path.exists(prev_asas_pdf_local): os.remove(prev_asas_pdf_local)
 
+# ★追加: ひまわり衛星画像の取得・保存
+himawari_vis = download_himawari_msc_image("b03")
+if himawari_vis: direct_png_upload(himawari_vis, "Himawari_Visible.png")
+
+himawari_ir = download_himawari_msc_image("b13")
+if himawari_ir: direct_png_upload(himawari_ir, "Himawari_Infrared.png")
+
 fsas_pdf_local = download_fsas_pdf()
 if fsas_pdf_local:
     pdf_to_png_and_upload(fsas_pdf_local, "FSAS_Latest.png")
@@ -280,7 +317,7 @@ if fxjp106_png: direct_png_upload(fxjp106_png, "FXJP106_Latest.png")
 fbjp_png = download_jma_png("https://www.data.jma.go.jp/airinfo/data/pict/fbjp/fbjp.png", "FBJP_Latest")
 if fbjp_png: direct_png_upload(fbjp_png, "FBJP_Latest.png")
 
-# --- 下層悪天予想図 (06: 6時間予想 / 39: 時系列予想) ---
+# --- 下層悪天予想図 ---
 sigwx_regions = {
     "fbsp": "Hokkaido",
     "fbsn": "Tohoku",
@@ -301,7 +338,7 @@ for code, name in sigwx_regions.items():
             final_name = f"FBOS{f_type}_{name}_Latest.png"
             direct_png_upload(png, final_name)
 
-# --- 降灰予報図 (合成不要) ---
+# --- 降灰予報図 ---
 ash_volcanoes = [("Sakurajima", "JR506X"), ("Kirishimayama", "JR551X")]
 for name, code in ash_volcanoes:
     pdf_file = get_latest_jma_ashfall_pdf_stable(name, code)
@@ -309,7 +346,7 @@ for name, code in ash_volcanoes:
         pdf_to_png_and_upload(pdf_file, f"Ashfall_{name}_Latest.png")
         if os.path.exists(pdf_file): os.remove(pdf_file)
 
-# ★修正: 短期解説資料のダウンロード及びPNG化・自動削除の実行
+# 短期解説資料
 kaisetsu_pdf_local = download_kaisetsu_tanki_pdf()
 if kaisetsu_pdf_local:
     pdf_to_png_and_upload(kaisetsu_pdf_local, "kaisetsu_tanki_latest.png")
@@ -320,9 +357,12 @@ if kaisetsu_pdf_local:
 # 6. 共通画像のPDF化 (Common_Briefing.pdf)
 # -----------------------------------
 def create_common_pdf(image_folder):
+    # ★変更: ひまわり画像(Visible, Infrared)をリスト内の時系列的に自然な順序（ASASの次）に追加
     target_images = [
-        "ASAS_Prior.png", "AUPQ35_Latest.png", "AUPQ78_Latest.png",
-        "ASAS_Latest.png", "FSAS_Latest.png",
+        "ASAS_Prior.png", "ASAS_Latest.png",
+        "Himawari_Visible.png", "Himawari_Infrared.png",
+        "AUPQ35_Latest.png", "AUPQ78_Latest.png",
+        "FSAS_Latest.png",
         "FXFE502_Latest.png", "FXFE5782_Latest.png",
         "FXJP854_Latest.png", "FXJP106_Latest.png",
         "FBJP_Latest.png"
