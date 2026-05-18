@@ -80,7 +80,7 @@
             <div class="spinner"></div>
             Preparing Download...<br>
             <span style="font-size: 14px; color: #666; font-weight: normal;">PDFを生成しています</span>
-        }</div>
+        </div>
     </div>
 
     <h2>WX Briefing</h2>
@@ -113,8 +113,8 @@
         { title: "AUPQ35", file: "AUPQ35_Latest.png" },
         { title: "AUPQ78", file: "AUPQ78_Latest.png" },
         { title: "ASAS Latest", file: "ASAS_Latest.png" },
-        { title: "可視画像", file: "Himawari_Visible.png" },
-        { title: "赤外画像", file: "Himawari_Infrared.png" },
+        { title: "可視画像", file: "dynamic_vis" }, // 最新URLを動的に計算するため識別子に変更
+        { title: "赤外画像", file: "dynamic_ir" },  // 最新URLを動的に計算するため識別子に変更
         { title: "FSAS24", file: "FSAS_Latest.png" },
         { title: "FXFE502", file: "FXFE502_Latest.png" },
         { title: "FXFE5782", file: "FXFE5782_Latest.png" },
@@ -219,6 +219,25 @@
 
     let currentImages = [];
 
+    // 気象庁ひまわり画像の最新URL（10分刻みUTC）を算出するヘルパー関数
+    function getLatestHimawariUrl(type) {
+        const now = new Date();
+        // 配信遅延（最大およそ20〜30分程度）を考慮し、30分前の時刻をベースラインにする
+        const baseTime = new Date(now.getTime() - 30 * 60 * 1000);
+        
+        const year = baseTime.getUTCFullYear();
+        const month = String(baseTime.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(baseTime.getUTCDate()).padStart(2, '0');
+        const hour = String(baseTime.getUTCHours()).padStart(2, '0');
+        // 10分単位の切り捨て処理
+        const minute = String(Math.floor(baseTime.getUTCMinutes() / 10) * 10).padStart(2, '0');
+        
+        const timeStr = `${year}${month}${day}${hour}${minute}00`;
+        
+        // type: 'jpsat' (可視) / 'jpisat' (赤外)
+        return `https://www.jma.go.jp/bosai/himawari/data/satimg/${timeStr}/fd/japan/${type}/none/none.png`;
+    }
+
     async function generateView() {
         const icao = document.getElementById('icao').value.toUpperCase();
         const resultDiv = document.getElementById('result');
@@ -233,7 +252,18 @@
         const config = airportConfig[icao] || { fbos: [], ash: [], kaisetsu: [] };
         
         const targetList = [
-            ...commonCharts.map(c => ({ title: c.title, url: `images/${c.file}` })),
+            ...commonCharts.map(c => {
+                // 可視画像・赤外画像の場合は気象庁URLを生成してWorkerのproxy_urlへ渡す
+                if (c.file === "dynamic_vis") {
+                    const jmaUrl = getLatestHimawariUrl("jpsat");
+                    return { title: c.title, url: `${WORKER_URL}/?proxy_url=${encodeURIComponent(jmaUrl)}` };
+                }
+                if (c.file === "dynamic_ir") {
+                    const jmaUrl = getLatestHimawariUrl("jpisat");
+                    return { title: c.title, url: `${WORKER_URL}/?proxy_url=${encodeURIComponent(jmaUrl)}` };
+                }
+                return { title: c.title, url: `images/${c.file}` };
+            }),
             ...config.fbos.map(f => {
                 let fbosTitle = "下層悪天予想図";
                 if (f.includes("06")) fbosTitle = "下層悪天予想図 6時間予想";
@@ -323,7 +353,7 @@
 
     async function downloadAllAsPDF() {
         if (currentImages.length === 0) {
-            return alert("先に「Generate View」を実行して画像を取得してください。");
+            return alert("先に「Generate」を実行して画像を取得してください。");
         }
 
         const overlay = document.getElementById('pdf-overlay');
