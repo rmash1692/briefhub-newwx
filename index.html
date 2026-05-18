@@ -343,21 +343,18 @@
                         height: drawH
                     });
 
-                    // ★ 追加ロジック: タイトルから英語のラベルを判定
                     let labelText = "";
                     if (item.title.includes("可視")) {
-                        labelText = "VISIBLE";
+                        labelText = "可視画像";
                     } else if (item.title.includes("赤外")) {
-                        labelText = "INFRARED";
+                        labelText = "赤外画像";
                     }
 
-                    // 該当する画像（可視・赤外）の時だけ右下にテキストを焼き付ける
                     if (labelText) {
                         const fontSize = 12;
                         const textWidth = font.widthOfTextAtSize(labelText, fontSize);
                         const textHeight = fontSize;
                         
-                        // パディングと配置座標の計算（画像の右下基準）
                         const paddingX = 10;
                         const paddingY = 6;
                         const rectW = textWidth + (paddingX * 2);
@@ -374,13 +371,13 @@
                             width: rectW,
                             height: rectH,
                             color: rgb(0, 0, 0),
-                            opacity: 0.6, // 60%の不透明度
+                            opacity: 0.6,
                         });
 
                         // 2. 背景の上に白い文字を描画
                         page.drawText(labelText, {
                             x: rectX + paddingX,
-                            y: rectY + paddingY + 2, // 微調整
+                            y: rectY + paddingY + 2,
                             size: fontSize,
                             font: font,
                             color: rgb(1, 1, 1), // 白
