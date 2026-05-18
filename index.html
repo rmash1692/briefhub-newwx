@@ -105,20 +105,20 @@
         localStorage.setItem('briefing_icao', icao);
     }
 
-    // Pythonスクリプトの保存名（大文字小文字）に完全に一致させました
+    // ひまわり画像はWorker経由でオンデマンド取得するため、フラグ（isWorker: true）を持たせます
     const commonCharts = [
-        { title: "ASAS Prior", file: "ASAS_Prior.png" },
-        { title: "AUPQ35", file: "AUPQ35_Latest.png" },
-        { title: "AUPQ78", file: "AUPQ78_Latest.png" },
-        { title: "ASAS Latest", file: "ASAS_Latest.png" },
-        { title: "可視画像", file: "Himawari_Visible.png" }, 
-        { title: "赤外画像", file: "Himawari_Infrared.png" },
-        { title: "FSAS24", file: "FSAS_Latest.png" },
-        { title: "FXFE502", file: "FXFE502_Latest.png" },
-        { title: "FXFE5782", file: "FXFE5782_Latest.png" },
-        { title: "FXJP854", file: "FXJP854_Latest.png" },
-        { title: "国内航空路予想断面図", file: "FXJP106_Latest.png" },
-        { title: "国内悪天予想図", file: "FBJP_Latest.png" },
+        { title: "ASAS Prior", file: "ASAS_Prior.png", isWorker: false },
+        { title: "AUPQ35", file: "AUPQ35_Latest.png", isWorker: false },
+        { title: "AUPQ78", file: "AUPQ78_Latest.png", isWorker: false },
+        { title: "ASAS Latest", file: "ASAS_Latest.png", isWorker: false },
+        { title: "可視画像", file: "himawari_vis", isWorker: true }, 
+        { title: "赤外画像", file: "himawari_ir", isWorker: true },
+        { title: "FSAS24", file: "FSAS_Latest.png", isWorker: false },
+        { title: "FXFE502", file: "FXFE502_Latest.png", isWorker: false },
+        { title: "FXFE5782", file: "FXFE5782_Latest.png", isWorker: false },
+        { title: "FXJP854", file: "FXJP854_Latest.png", isWorker: false },
+        { title: "国内航空路予想断面図", file: "FXJP106_Latest.png", isWorker: false },
+        { title: "国内悪天予想図", file: "FBJP_Latest.png", isWorker: false },
     ];
 
     const airportConfig = {
@@ -230,9 +230,14 @@
 
         const config = airportConfig[icao] || { fbos: [], ash: [], kaisetsu: [] };
         
-        // すべてimages/配下の静的ファイルとして一貫して処理する形式に戻しました
+        // isWorkerフラグに基づいてURLの参照先を適切に切り分けます
         const targetList = [
-            ...commonCharts.map(c => ({ title: c.title, url: `images/${c.file}` })),
+            ...commonCharts.map(c => {
+                if (c.isWorker) {
+                    return { title: c.title, url: `${WORKER_URL}/?type=${c.file}` };
+                }
+                return { title: c.title, url: `images/${c.file}` };
+            }),
             ...config.fbos.map(f => {
                 let fbosTitle = "下層悪天予想図";
                 if (f.includes("06")) fbosTitle = "下層悪天予想図 6時間予想";
