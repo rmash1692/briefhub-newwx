@@ -106,6 +106,22 @@ def download_jma_ashfall_pdf(chart_id, target_time_jst):
         return filename
     return None
 
+# ★新規追加: 短期解説資料PDFダウンロード関数
+def download_kaisetsu_tanki_pdf():
+    url = "https://www.data.jma.go.jp/yoho/data/jishin/kaisetsu_tanki_latest.pdf"
+    filename = "kaisetsu_tanki_latest.pdf"
+    dest_path = os.path.join(dest_folder_path, filename)
+    try:
+        r = requests.get(url, timeout=20)
+        if r.status_code == 200:
+            with open(dest_path, "wb") as f:
+                f.write(r.content)
+            print(f"保存完了: {dest_path}")
+            return dest_path
+    except Exception as e:
+        print(f"短期解説資料ダウンロードエラー: {e}")
+    return None
+
 # -----------------------------------
 # 3. 取得ロジック関数群
 # -----------------------------------
@@ -308,6 +324,7 @@ for code, name in sigwx_regions.items():
             # HTML側で呼び出しやすいよう "FBOS_地域名_タイプ_Latest.png" で保存
             final_name = f"FBOS{f_type}_{name}_Latest.png"
             direct_png_upload(png, final_name)
+
 # --- 降灰予報図 (合成不要) ---
 ash_volcanoes = [("Sakurajima", "JR506X"), ("Kirishimayama", "JR551X")]
 for name, code in ash_volcanoes:
@@ -315,6 +332,10 @@ for name, code in ash_volcanoes:
     if pdf_file:
         pdf_to_png_and_upload(pdf_file, f"Ashfall_{name}_Latest.png")
         os.remove(pdf_file)
+
+# ★新規追加: 短期解説資料のダウンロード実行
+download_kaisetsu_tanki_pdf()
+
 
 # -----------------------------------
 # 6. 共通画像のPDF化 (Common_Briefing.pdf)
