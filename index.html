@@ -23,12 +23,11 @@
         .btn-pdf { background-color: #28a745; }
         .btn-pdf:hover { background-color: #218838; }
 
-        /* PDF生成中ポップアップ用のスタイル */
         .overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.5);
-            display: none; /* 初期状態は非表示 */
+            display: none; 
             justify-content: center;
             align-items: center;
             z-index: 9999;
@@ -56,7 +55,6 @@
             100% { transform: rotate(360deg); } 
         }
 
-        /* 天気図表示用カードスタイル */
         .card { 
             border-left: 4px solid #0078D4; border-top: 1px solid #eee; border-right: 1px solid #eee; 
             border-bottom: 1px solid #eee; padding: 15px; margin-bottom: 25px; border-radius: 0 4px 4px 0; 
@@ -74,7 +72,6 @@
 </head>
 <body>
 
-    <!-- PDF生成中のオーバーレイ -->
     <div id="pdf-overlay" class="overlay">
         <div class="overlay-content">
             <div class="spinner"></div>
@@ -108,13 +105,14 @@
         localStorage.setItem('briefing_icao', icao);
     }
 
+    // Pythonスクリプトの保存名（大文字小文字）に完全に一致させました
     const commonCharts = [
         { title: "ASAS Prior", file: "ASAS_Prior.png" },
         { title: "AUPQ35", file: "AUPQ35_Latest.png" },
         { title: "AUPQ78", file: "AUPQ78_Latest.png" },
         { title: "ASAS Latest", file: "ASAS_Latest.png" },
-        { title: "可視画像", file: "dynamic_vis" }, // 最新URLを動的に計算するため識別子に変更
-        { title: "赤外画像", file: "dynamic_ir" },  // 最新URLを動的に計算するため識別子に変更
+        { title: "可視画像", file: "Himawari_Visible.png" }, 
+        { title: "赤外画像", file: "Himawari_Infrared.png" },
         { title: "FSAS24", file: "FSAS_Latest.png" },
         { title: "FXFE502", file: "FXFE502_Latest.png" },
         { title: "FXFE5782", file: "FXFE5782_Latest.png" },
@@ -219,25 +217,6 @@
 
     let currentImages = [];
 
-    // 気象庁ひまわり画像の最新URL（10分刻みUTC）を算出するヘルパー関数
-    function getLatestHimawariUrl(type) {
-        const now = new Date();
-        // 配信遅延（最大およそ20〜30分程度）を考慮し、30分前の時刻をベースラインにする
-        const baseTime = new Date(now.getTime() - 30 * 60 * 1000);
-        
-        const year = baseTime.getUTCFullYear();
-        const month = String(baseTime.getUTCMonth() + 1).padStart(2, '0');
-        const day = String(baseTime.getUTCDate()).padStart(2, '0');
-        const hour = String(baseTime.getUTCHours()).padStart(2, '0');
-        // 10分単位の切り捨て処理
-        const minute = String(Math.floor(baseTime.getUTCMinutes() / 10) * 10).padStart(2, '0');
-        
-        const timeStr = `${year}${month}${day}${hour}${minute}00`;
-        
-        // type: 'jpsat' (可視) / 'jpisat' (赤外)
-        return `https://www.jma.go.jp/bosai/himawari/data/satimg/${timeStr}/fd/japan/${type}/none/none.png`;
-    }
-
     async function generateView() {
         const icao = document.getElementById('icao').value.toUpperCase();
         const resultDiv = document.getElementById('result');
@@ -251,19 +230,9 @@
 
         const config = airportConfig[icao] || { fbos: [], ash: [], kaisetsu: [] };
         
+        // すべてimages/配下の静的ファイルとして一貫して処理する形式に戻しました
         const targetList = [
-            ...commonCharts.map(c => {
-                // 可視画像・赤外画像の場合は気象庁URLを生成してWorkerのproxy_urlへ渡す
-                if (c.file === "dynamic_vis") {
-                    const jmaUrl = getLatestHimawariUrl("jpsat");
-                    return { title: c.title, url: `${WORKER_URL}/?proxy_url=${encodeURIComponent(jmaUrl)}` };
-                }
-                if (c.file === "dynamic_ir") {
-                    const jmaUrl = getLatestHimawariUrl("jpisat");
-                    return { title: c.title, url: `${WORKER_URL}/?proxy_url=${encodeURIComponent(jmaUrl)}` };
-                }
-                return { title: c.title, url: `images/${c.file}` };
-            }),
+            ...commonCharts.map(c => ({ title: c.title, url: `images/${c.file}` })),
             ...config.fbos.map(f => {
                 let fbosTitle = "下層悪天予想図";
                 if (f.includes("06")) fbosTitle = "下層悪天予想図 6時間予想";
@@ -305,7 +274,6 @@
         genBtn.disabled = false;
     }
 
-    // 日本語テキストを乗せた新しいPNGのArrayBufferを生成するヘルパー関数
     function addTextToImage(blob, text) {
         return new Promise((resolve, reject) => {
             const img = new Image();
@@ -316,10 +284,8 @@
                 canvas.height = img.height;
                 const ctx = canvas.getContext('2d');
                 
-                // 元画像を描画
                 ctx.drawImage(img, 0, 0);
                 
-                // テキストの描画設定（フォントサイズは画像幅に応じて適宜スケール）
                 const fontSize = Math.max(16, Math.round(img.width * 0.025));
                 ctx.font = `bold ${fontSize}px sans-serif`;
                 
@@ -329,20 +295,16 @@
                 const rectW = textWidth + paddingX * 2;
                 const rectH = fontSize + paddingY * 2;
                 
-                // 右下隅の座標を計算
                 const rectX = img.width - rectW - fontSize * 0.5;
                 const rectY = img.height - rectH - fontSize * 0.5;
                 
-                // 半透明の背景（座布団）を描画
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
                 ctx.fillRect(rectX, rectY, rectW, rectH);
                 
-                // 白い文字を描画
                 ctx.fillStyle = '#ffffff';
                 ctx.textBaseline = 'top';
                 ctx.fillText(text, rectX + paddingX, rectY + paddingY);
                 
-                // CanvasからBlobを経てArrayBufferを取得
                 canvas.toBlob((newBlob) => {
                     newBlob.arrayBuffer().then(resolve).catch(reject);
                 }, 'image/png');
@@ -359,7 +321,6 @@
         const overlay = document.getElementById('pdf-overlay');
         overlay.style.display = 'flex';
 
-        // 画面の再描画を待つ
         await new Promise(resolve => setTimeout(resolve, 50));
 
         try {
@@ -375,7 +336,6 @@
                     if (item.title.includes("可視")) labelText = "可視画像";
                     if (item.title.includes("赤外")) labelText = "赤外画像";
 
-                    // 日本語表示が必要な場合は、Canvasで画像を合成して上書きする
                     if (labelText) {
                         imgBytes = await addTextToImage(item.blob, labelText);
                     } else {
