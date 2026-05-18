@@ -284,7 +284,7 @@
         genBtn.disabled = false;
     }
 
-    async function downloadAllAsPDF() {
+   async function downloadAllAsPDF() {
         if (currentImages.length === 0) {
             return alert("先に「Generate View」を実行して画像を取得してください。");
         }
@@ -305,7 +305,17 @@
             for (const item of currentImages) {
                 try {
                     const imgBytes = await item.blob.arrayBuffer();
-                    const img = await pdfDoc.embedPng(imgBytes);
+                    const uint8Array = new Uint8Array(imgBytes);
+                    
+                    let img;
+                    // ★ 修正ポイント: バイナリデータの先頭（マジックナンバー）でJPGかPNGかを自動判別
+                    if (uint8Array[0] === 0xFF && uint8Array[1] === 0xD8) {
+                        // JPEG形式として埋め込み
+                        img = await pdfDoc.embedJpg(imgBytes);
+                    } else {
+                        // PNG形式として埋め込み (デフォルト)
+                        img = await pdfDoc.embedPng(imgBytes);
+                    }
 
                     const { width, height } = img.scale(1);
                     const isLandscape = width > height;
@@ -328,15 +338,17 @@
                         width: drawW,
                         height: drawH
                     });
-                } catch (e) { console.warn("PDF Embed Error", e); }
+                } catch (e) { 
+                    console.warn(`PDF Embed Error at [${item.title}]:`, e); 
+                }
             }
 
             const pdfBytes = await pdfDoc.save();
             const blob = new Blob([pdfBytes], { type: 'application/pdf' });
             const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `AviationBrief_WX_${icao}.pdf`;
-            link.click();
+            const link.href = URL.createObjectURL(blob);
+            const link.download = `AviationBrief_WX_${icao}.pdf`;
+            const link.click();
 
         } catch (error) {
             console.error(error);
